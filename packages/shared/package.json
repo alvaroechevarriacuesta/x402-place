@@ -1,0 +1,20 @@
+{
+  "name": "@x402place/shared",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./lib/index.ts",
+  "types": "./types/index.ts",
+  "dependencies": {
+    "@prisma/client": "^5.20.0",
+    "redis": "^4.7.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.20.0",
+    "typescript": "^5.6.3"
+  },
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev"
+  }
+}
+
