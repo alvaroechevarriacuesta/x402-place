@@ -18,18 +18,19 @@ model Pixel {
 }
 
 model History {
-  id        BigInt   @id @default(autoincrement())
+  id        BigInt   @id @default(uuid())
   timestamp DateTime @default(now())
   x         Int
   y         Int
   color     String
+
+  @@index([timestamp(sort: Desc)])
 }
 
 model Snapshot {
   id        BigInt   @id @default(autoincrement())
   timestamp DateTime @default(now())
   blobUrl   String
-  metadata  String?  // Optional JSON metadata (dimensions, pixel count, etc.)
 
-  @@index([timestamp])
+  @@index([timestamp(sort: Desc)])
 }
