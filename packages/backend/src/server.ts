@@ -1,8 +1,16 @@
-// Backend server entry point
-// This will handle your API routes
+import { Hono } from "hono";
+import { serve } from "@hono/node-server";
+import { registerPlacePixelRoutes } from "./routes/place";
 
-console.log('Backend server starting...');
+const app = new Hono();
 
-// TODO: Set up your server framework (Express, Fastify, etc.)
-// TODO: Import and use routes from ./routes/
+registerPlacePixelRoutes(app);
 
+const port = Number(process.env.PORT) || 3001;
+
+console.log(`🚀 Server starting on http://localhost:${port}`);
+
+serve({
+  fetch: app.fetch,
+  port,
+});
