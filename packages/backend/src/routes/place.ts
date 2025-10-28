@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
+import { PixelUpdateEvent } from "@x402place/shared/types/pixel";
+import { addCanvasEvent, publishEvent } from "@x402place/shared/lib/redis";
 
 export function registerPlacePixelRoutes(app: Hono) {
     app.post("/api/place", async (c: Context) => {
@@ -16,6 +18,27 @@ export function registerPlacePixelRoutes(app: Hono) {
         }
         
         // TODO: Implement pixel placement logic
+        const event: PixelUpdateEvent = {
+            event_id: crypto.randomUUID(),
+            x,
+            y,
+            color,
+            ts: Date.now(),
+        };
+
+        try {
+            await addCanvasEvent(event);
+        } catch (error) {
+            console.error("Failed to add canvas event:", error);
+            return c.json({ error: "Failed to place pixel" }, 500);
+        }
+
+        try {
+            await publishEvent(event);
+        } catch (error) {
+            console.error("Failed to publish event:", error);
+            // Continue even if publish fails (live updates are not critical)
+        }
         return c.json({ success: true, x, y, color });
     });
 }
