@@ -18,7 +18,7 @@ model Pixel {
 }
 
 model History {
-  id        BigInt   @id @default(uuid())
+  id        String   @id @default(uuid())
   timestamp DateTime @default(now())
   x         Int
   y         Int
@@ -28,7 +28,7 @@ model History {
 }
 
 model Snapshot {
-  id        BigInt   @id @default(autoincrement())
+  id        String   @id @default(uuid())
   timestamp DateTime @default(now())
   blobUrl   String
 

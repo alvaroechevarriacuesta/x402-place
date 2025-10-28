@@ -3,6 +3,8 @@
 # dependencies
 /node_modules
 /.pnp
+.turbo
+.pnpm-store
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -19,6 +21,8 @@
 
 # production
 /build
+/dist
+**/dist
 
 # misc
 .DS_Store

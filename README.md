@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# x402place
+
+A monorepo project for x402place, structured with multiple packages for better code organization and separation of concerns.
+
+## Project Structure
+
+This is a monorepo managed with pnpm workspaces and Turbo. The project is organized into the following packages:
+
+```
+packages/
+├── app/        # Next.js frontend application
+├── backend/    # Backend API server
+├── shared/     # Shared code, types, and utilities used by both backend and worker
+└── worker/     # Background worker for recurring jobs
+```
+
+### Package Details
+
+- **`packages/app`**: Next.js 16 application with React 19, Tailwind CSS 4
+- **`packages/backend`**: Backend server (setup in progress)
+- **`packages/shared`**: Shared utilities, types, Prisma client, and Redis configuration
+- **`packages/worker`**: Background job processor (setup for later)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20+
+- pnpm (install with `npm install -g pnpm`)
+- Docker (for PostgreSQL)
+
+### Installation
+
+1. Install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Start PostgreSQL:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+docker-compose up -d
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. Set up the database:
 
-## Learn More
+```bash
+cd packages/shared
+pnpm db:migrate
+pnpm db:generate
+```
 
-To learn more about Next.js, take a look at the following resources:
+### Development
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Run all packages in development mode:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+pnpm dev
+```
 
-## Deploy on Vercel
+Or run individual packages:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+# Frontend only
+pnpm app:dev
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Backend only
+pnpm backend:dev
+
+# Worker
+pnpm worker:start
+```
+
+### Database
+
+PostgreSQL is configured via Docker Compose on port 5471. Connection details:
+
+- Host: localhost:5471
+- Database: x402place
+- User: postgres
+- Password: postgres
+
+## Tech Stack
+
+- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS 4
+- **Backend**: Node.js, TypeScript
+- **Database**: PostgreSQL, Prisma ORM
+- **Cache**: Redis
+- **Monorepo**: pnpm workspaces, Turbo
+
+## Scripts
+
+- `pnpm dev` - Start all packages in development mode
+- `pnpm build` - Build all packages
+- `pnpm app:dev` - Start only the Next.js app
+- `pnpm backend:dev` - Start only the backend server
+- `pnpm worker:start` - Start the worker process

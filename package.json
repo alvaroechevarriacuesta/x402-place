@@ -2,12 +2,13 @@
   "name": "x402place",
   "version": "0.1.0",
   "private": true,
-  "workspaces": ["packages/*"],
+  "packageManager": "pnpm@10.12.3",
   "scripts": {
     "dev": "turbo run dev --parallel",
     "build": "turbo run build",
-    "worker": "pnpm --filter worker run start",
-    "ws": "pnpm --filter ws run start"
+    "app:dev": "pnpm --filter @x402place/app run dev",
+    "backend:dev": "pnpm --filter @x402place/backend run dev",
+    "worker:start": "pnpm --filter @x402place/worker run start"
   },
   "devDependencies": {
     "turbo": "^2.0.0",
