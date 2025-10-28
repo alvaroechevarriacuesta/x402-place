@@ -32,13 +32,9 @@ export function registerPlacePixelRoutes(app: Hono) {
             console.error("Failed to add canvas event:", error);
             return c.json({ error: "Failed to place pixel" }, 500);
         }
-
-        try {
-            await publishEvent(event);
-        } catch (error) {
+        publishEvent(event).catch((error) => {
             console.error("Failed to publish event:", error);
-            // Continue even if publish fails (live updates are not critical)
-        }
+        });
         return c.json({ success: true, x, y, color });
     });
 }

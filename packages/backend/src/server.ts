@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { registerPlacePixelRoutes } from "./routes/place";
 import { registerSnapshotRoutes } from "./routes/snapshot";
+import { setupWebSocket } from "./ws";
 
 const app = new Hono();
 
@@ -16,3 +17,6 @@ serve({
   fetch: app.fetch,
   port,
 });
+
+// Setup WebSocket server
+setupWebSocket(port);
