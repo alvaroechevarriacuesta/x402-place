@@ -1,0 +1,57 @@
+# Worker Service Dockerfile
+# Build from repository root: docker build -f Dockerfile.worker -t x402place-worker .
+
+# Base stage
+FROM node:20-alpine AS base
+RUN npm install -g pnpm
+WORKDIR /app
+
+# Builder stage
+FROM base AS builder
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/worker/package.json ./packages/worker/
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/shared/prisma ./packages/shared/prisma
+COPY packages/shared/lib ./packages/shared/lib
+COPY packages/shared/types ./packages/shared/types
+COPY packages/worker/src ./packages/worker/src
+COPY tsconfig.json ./
+
+# Install all dependencies
+RUN pnpm install --frozen-lockfile
+
+# Generate Prisma Client
+RUN cd packages/shared && pnpm db:generate
+
+# Build TypeScript
+RUN cd packages/worker && pnpm build
+
+# Production stage
+FROM node:20-alpine AS production
+RUN npm install -g pnpm
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/worker/package.json ./packages/worker/
+COPY packages/shared/package.json ./packages/shared/
+
+# Install production dependencies only
+RUN pnpm install --frozen-lockfile --prod
+
+# Copy Prisma schema and migrations for runtime
+COPY packages/shared/prisma ./packages/shared/prisma
+
+# Generate Prisma Client in production
+RUN cd packages/shared && pnpm db:generate
+
+# Copy built worker files
+COPY --from=builder /app/packages/worker/dist ./packages/worker/dist
+
+# Copy shared source files (needed at runtime since worker imports from .ts files)
+COPY --from=builder /app/packages/shared/lib ./packages/shared/lib
+COPY --from=builder /app/packages/shared/types ./packages/shared/types
+
+# Start the worker
+CMD ["node", "packages/worker/dist/worker.js"]
+

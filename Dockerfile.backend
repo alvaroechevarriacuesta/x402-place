@@ -1,9 +1,12 @@
+# Backend Service Dockerfile
+# Build from repository root: docker build -f Dockerfile.backend -t x402place-backend .
+
 # Base stage
 FROM node:20-alpine AS base
 RUN npm install -g pnpm
 WORKDIR /app
 
-# Copy all source files needed for build
+# Builder stage
 FROM base AS builder
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/backend/package.json ./packages/backend/
@@ -45,7 +48,7 @@ RUN cd packages/shared && pnpm db:generate
 # Copy built backend files
 COPY --from=builder /app/packages/backend/dist ./packages/backend/dist
 
-# Copy shared source files (needed at runtime)
+# Copy shared source files (needed at runtime since backend imports from .ts files)
 COPY --from=builder /app/packages/shared/lib ./packages/shared/lib
 COPY --from=builder /app/packages/shared/types ./packages/shared/types
 
