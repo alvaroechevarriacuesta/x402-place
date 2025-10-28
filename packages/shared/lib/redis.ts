@@ -58,7 +58,7 @@ export async function ensureConsumerGroup(groupName = "workers") {
 
 export async function trimCanvasEvents(maxLen = 1_000_000) {
     const redis = await getRedis();
-    await redis.xTrim(STREAM_KEY, "MAXLEN", maxLen, { approximate: true });
+    await redis.xTrim(STREAM_KEY, "MAXLEN", maxLen);
   }
 
 // PUB / SUB (deliver live updates to frontend)
