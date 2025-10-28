@@ -1,0 +1,16 @@
+{
+  "name": "x402place",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "worker": "pnpm --filter worker run start",
+    "ws": "pnpm --filter ws run start"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.6.3"
+  }
+}
