@@ -17,7 +17,7 @@ packages/
 ### Package Details
 
 - **`packages/app`**: Next.js 16 application with React 19, Tailwind CSS 4
-- **`packages/backend`**: Backend server (setup in progress)
+- **`packages/backend`**: Backend server
 - **`packages/shared`**: Shared utilities, types, Prisma client, and Redis configuration
 - **`packages/worker`**: Background job processor (setup for later)
 
