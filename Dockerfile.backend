@@ -42,8 +42,9 @@ RUN pnpm install --frozen-lockfile --prod
 # Copy Prisma schema and migrations for runtime
 COPY packages/shared/prisma ./packages/shared/prisma
 
-# Generate Prisma Client in production
-RUN cd packages/shared && pnpm db:generate
+# Copy generated Prisma Client from builder stage
+COPY --from=builder /app/packages/shared/node_modules/.prisma ./packages/shared/node_modules/.prisma
+COPY --from=builder /app/packages/shared/node_modules/@prisma/client ./packages/shared/node_modules/@prisma/client
 
 # Copy built backend files
 COPY --from=builder /app/packages/backend/dist ./packages/backend/dist
