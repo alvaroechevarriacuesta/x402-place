@@ -15,7 +15,6 @@ export interface PixelUpdateEvent {
 
 export interface Snapshot {
     id: number;
-    url: string;
-    // Timestamp of the last update in the snapshot
-    createdAt: number;
+    blobUrl: string;
+    timestamp: number;
 }

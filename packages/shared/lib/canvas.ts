@@ -1,35 +1,92 @@
 import { PixelUpdateEvent, Snapshot, Pixel } from "../types/pixel";
 import { prisma } from "./db";
 
-// Get all the events after a certain timestamp
-export async function getEvents(since?: number, until?: number): Promise<PixelUpdateEvent[]> {
-    // TODO: Implement fetching pixel update events from database between since and until timestamps
-    return [];
-}
 
-export async function getLatestSnapshot(): Promise<Snapshot> {
-    // TODO: Implement fetching the latest snapshot from the database
+
+export async function getLatestSnapshot(): Promise<Snapshot | null> {
+    const snapshot = await prisma.snapshot.findFirst({
+        orderBy: { timestamp: 'desc' },
+    });
+    
+    if (!snapshot) return null;
+    
     return {
-        id: 0,
-        url: "",
-        createdAt: 0,
+        id: Number(snapshot.id),
+        blobUrl: snapshot.blobUrl,
+        timestamp: snapshot.timestamp.getTime(), // Convert Date to Unix timestamp
     };
 }
 
-export async function saveSnapshot(snapshot: Snapshot): Promise<void> {
-    // TODO: Implement saving the snapshot to the database
+export async function saveSnapshot(snapshot: Omit<Snapshot, 'id'>): Promise<void> {
+    await prisma.snapshot.create({
+        data: {
+            blobUrl: snapshot.blobUrl,
+            timestamp: new Date(snapshot.timestamp),
+        },
+    });
+    
     return;
+}
+
+
+
+export async function getEvents(since: number, until?: number): Promise<PixelUpdateEvent[]> {
+    const history = await prisma.history.findMany({
+        where: {
+            timestamp: {
+                gte: new Date(since),
+                ...(until ? { lte: new Date(until) } : {}),
+            },
+        },
+        orderBy: {
+            timestamp: 'asc',
+        },
+    });
+
+    return history.map((record: any): PixelUpdateEvent => ({
+        event_id: record.id.toString(),
+        x: record.x,
+        y: record.y,
+        color: record.color,
+        ts: record.timestamp.getTime(),
+    }));
 }
 
 export async function saveEvents(events: PixelUpdateEvent[]): Promise<void> {
-    // TODO: Implement saving the events to the database
-    return;
+    await prisma.history.createMany({
+        data: events.map((event) => ({
+            x: event.x,
+            y: event.y,
+            color: event.color,
+            timestamp: new Date(event.ts),
+        })),
+    });
 }
 
 export async function upsertPixels(pixels: Pixel[]): Promise<void> {
-    return;
+    await prisma.$transaction(
+        pixels.map((pixel) =>
+            prisma.pixel.upsert({
+                where: {
+                    x_y: {
+                        x: pixel.x,
+                        y: pixel.y,
+                    },
+                },
+                update: {
+                    color: pixel.color,
+                },
+                create: {
+                    x: pixel.x,
+                    y: pixel.y,
+                    color: pixel.color,
+                },
+            })
+        )
+    );
 }
 
 export async function getAllPixels(): Promise<Pixel[]> {
-    return [];
+    const pixels = await prisma.pixel.findMany();
+    return pixels as Pixel[];
 }
