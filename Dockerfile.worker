@@ -48,12 +48,8 @@ RUN pnpm install --frozen-lockfile --prod
 # Generate Prisma client in production (using npx to download prisma CLI temporarily)
 RUN cd packages/shared && npx -y prisma@5.20.0 generate
 
-# Copy built worker files
+# Copy built worker files (bundled with all dependencies)
 COPY --from=builder /app/packages/worker/dist ./packages/worker/dist
-
-# Copy shared source files (needed at runtime since worker imports from .ts files)
-COPY --from=builder /app/packages/shared/lib ./packages/shared/lib
-COPY --from=builder /app/packages/shared/types ./packages/shared/types
 
 # Start the worker
 CMD ["node", "packages/worker/dist/worker.js"]

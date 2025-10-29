@@ -55,12 +55,8 @@ RUN pnpm install --frozen-lockfile --prod
 # Generate Prisma client in production (using npx to download prisma CLI temporarily)
 RUN cd packages/shared && npx -y prisma@5.20.0 generate
 
-# Copy built backend files
+# Copy built backend files (bundled with all dependencies)
 COPY --from=builder /app/packages/backend/dist ./packages/backend/dist
-
-# Copy shared source files (needed at runtime since backend imports from .ts files)
-COPY --from=builder /app/packages/shared/lib ./packages/shared/lib
-COPY --from=builder /app/packages/shared/types ./packages/shared/types
 
 # Expose port
 EXPOSE 3000
