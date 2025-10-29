@@ -18,6 +18,7 @@ export function setupWebSocket(port: number) {
         console.error("WebSocket server error:", error);
     });
 
+    // Subscribe to Redis for live updates (handle errors gracefully if Redis is not available)
     subscribe((event) => {
         const message = JSON.stringify({type: "pixel_update", payload: event});
         clients.forEach((client) => {
@@ -25,6 +26,9 @@ export function setupWebSocket(port: number) {
                 client.send(message);
             }
         });
+    }).catch((error) => {
+        console.warn("Redis not available for live updates:", error.message);
+        console.log("WebSocket server will run without Redis pub/sub");
     });
 
     console.log(`WebSocket server running on ws://localhost:${port}/ws`);

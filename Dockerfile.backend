@@ -38,6 +38,10 @@ RUN cd packages/backend && pnpm build && ls -la dist
 
 # Production stage
 FROM node:20-alpine AS production
+
+# Install OpenSSL (required by Prisma on Alpine)
+RUN apk add --no-cache openssl
+
 RUN npm install -g pnpm
 WORKDIR /app
 
@@ -64,8 +68,8 @@ COPY --from=builder /app/packages/backend/dist ./packages/backend/dist
 # Set NODE_PATH to help Node find modules in the monorepo
 ENV NODE_PATH=/app/node_modules:/app/packages/shared/node_modules
 
-# Expose port
-EXPOSE 3000
+# Expose HTTP and WebSocket ports
+EXPOSE 3000 3001
 
 # Start the application from the app root
 CMD ["node", "packages/backend/dist/server.js"]

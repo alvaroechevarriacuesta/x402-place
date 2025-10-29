@@ -10,6 +10,7 @@ registerPlacePixelRoutes(app);
 registerSnapshotRoutes(app);
 
 const port = Number(process.env.PORT) || 3001;
+const wsPort = Number(process.env.WS_PORT) || port + 1;
 
 console.log(`🚀 Server starting on http://localhost:${port}`);
 
@@ -18,5 +19,5 @@ serve({
   port,
 });
 
-// Setup WebSocket server
-setupWebSocket(port);
+// Setup WebSocket server on a different port
+setupWebSocket(wsPort);
