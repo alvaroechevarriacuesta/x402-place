@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePixelPayment } from '@/src/app/_hooks/use-pixel-payment';
+import Minimap from '@/src/components/minimap';
+import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 
 interface CanvasProps {
   gridWidth?: number;
@@ -37,6 +39,12 @@ export default function Canvas({
   const [scale, setScale] = useState(1);
   const [isPanning, setIsPanning] = useState(false);
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
+
+  // Viewport dimensions for minimap
+  const [viewportDimensions, setViewportDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
 
   // Drawing function
   const drawGrid = useCallback(() => {
@@ -91,16 +99,16 @@ export default function Canvas({
   useEffect(() => {
     // Only load once
     if (hasLoadedSnapshot.current) return;
-    
+
     const loadSnapshot = async () => {
       try {
         console.log('[Canvas] Loading snapshot...');
         setIsLoadingSnapshot(true);
         hasLoadedSnapshot.current = true;
-        
+
         // Fetch the PNG snapshot from the API
         const response = await fetch('/api/snapshot');
-        
+
         if (!response.ok) {
           throw new Error('Failed to load snapshot');
         }
@@ -108,11 +116,11 @@ export default function Canvas({
         // Get the image as a blob
         const blob = await response.blob();
         console.log('[Canvas] Snapshot blob size:', blob.size);
-        
+
         // Create an image element to load the PNG
         const img = new Image();
         const url = URL.createObjectURL(blob);
-        
+
         img.onload = () => {
           console.log('[Canvas] Snapshot image loaded, parsing pixels...');
           // Create a temporary canvas to read pixel data
@@ -120,15 +128,15 @@ export default function Canvas({
           tempCanvas.width = gridWidth;
           tempCanvas.height = gridHeight;
           const tempCtx = tempCanvas.getContext('2d');
-          
+
           if (tempCtx) {
             // Draw the image onto the temporary canvas
             tempCtx.drawImage(img, 0, 0);
-            
+
             // Read pixel data from the image
             const imageData = tempCtx.getImageData(0, 0, gridWidth, gridHeight);
             const data = imageData.data;
-            
+
             // Update the grid with colors from the image
             for (let y = 0; y < gridHeight; y++) {
               for (let x = 0; x < gridWidth; x++) {
@@ -136,28 +144,28 @@ export default function Canvas({
                 const r = data[idx];
                 const g = data[idx + 1];
                 const b = data[idx + 2];
-                
+
                 // Convert RGB to hex color
                 const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
                 gridRef.current[y][x] = hex;
               }
             }
-            
+
             console.log('[Canvas] Snapshot loaded successfully');
             // Note: drawGrid will be called by the drawGrid useEffect
           }
-          
+
           // Clean up
           URL.revokeObjectURL(url);
           setIsLoadingSnapshot(false);
         };
-        
+
         img.onerror = () => {
           console.error('[Canvas] Failed to load snapshot image');
           URL.revokeObjectURL(url);
           setIsLoadingSnapshot(false);
         };
-        
+
         img.src = url;
       } catch (error) {
         console.error('[Canvas] Error loading snapshot:', error);
@@ -294,6 +302,74 @@ export default function Canvas({
     event.preventDefault();
   }, []);
 
+  // Zoom controls
+  const handleZoomIn = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+
+    const zoomFactor = 1.2;
+    const newScale = Math.min(scale * zoomFactor, 10);
+
+    const scaleChange = newScale / scale;
+    const newOffset = {
+      x: centerX - (centerX - offset.x) * scaleChange,
+      y: centerY - (centerY - offset.y) * scaleChange,
+    };
+
+    setScale(newScale);
+    setOffset(newOffset);
+  }, [scale, offset]);
+
+  const handleZoomOut = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+
+    const zoomFactor = 0.8;
+    const newScale = Math.max(scale * zoomFactor, 0.1);
+
+    const scaleChange = newScale / scale;
+    const newOffset = {
+      x: centerX - (centerX - offset.x) * scaleChange,
+      y: centerY - (centerY - offset.y) * scaleChange,
+    };
+
+    setScale(newScale);
+    setOffset(newOffset);
+  }, [scale, offset]);
+
+  const handleResetView = useCallback(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    const rect = container.getBoundingClientRect();
+
+    // Calculate the scale needed to fit the entire grid in the viewport
+    const gridPixelWidth = gridWidth * pixelSize;
+    const gridPixelHeight = gridHeight * pixelSize;
+
+    // Add some padding (90% of viewport)
+    const scaleX = (rect.width * 0.9) / gridPixelWidth;
+    const scaleY = (rect.height * 0.9) / gridPixelHeight;
+    const fitScale = Math.min(scaleX, scaleY);
+
+    setScale(fitScale);
+
+    // Center the grid
+    setOffset({
+      x: (rect.width - gridPixelWidth * fitScale) / 2,
+      y: (rect.height - gridPixelHeight * fitScale) / 2,
+    });
+  }, [gridWidth, gridHeight, pixelSize]);
+
   // Resize canvas to match container
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -308,6 +384,9 @@ export default function Canvas({
       canvas.height = rect.height * dpr;
       canvas.style.width = `${rect.width}px`;
       canvas.style.height = `${rect.height}px`;
+
+      // Update viewport dimensions for minimap
+      setViewportDimensions({ width: rect.width, height: rect.height });
 
       const ctx = canvas.getContext('2d');
       if (ctx) {
@@ -367,6 +446,54 @@ export default function Canvas({
         style={{ display: 'block' }}
       />
 
+      {/* Minimap with zoom controls */}
+      {!isLoadingSnapshot && viewportDimensions.width > 0 && (
+        <div className="absolute bottom-4 right-4 flex flex-col gap-3">
+          {/* Minimap */}
+          <div>
+            <Minimap
+              gridWidth={gridWidth}
+              gridHeight={gridHeight}
+              pixelSize={pixelSize}
+              offset={offset}
+              scale={scale}
+              viewportWidth={viewportDimensions.width}
+              viewportHeight={viewportDimensions.height}
+              gridRef={gridRef}
+              onNavigate={(newOffset) => setOffset(newOffset)}
+            />
+          </div>
+
+          {/* Zoom control buttons - below minimap */}
+          <div className="flex gap-2 justify-center">
+            <button
+              onClick={handleZoomIn}
+              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              title="Zoom In"
+              aria-label="Zoom In"
+            >
+              <ZoomIn className="w-5 h-5 text-zinc-900 dark:text-zinc-100" />
+            </button>
+            <button
+              onClick={handleZoomOut}
+              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              title="Zoom Out"
+              aria-label="Zoom Out"
+            >
+              <ZoomOut className="w-5 h-5 text-zinc-900 dark:text-zinc-100" />
+            </button>
+            <button
+              onClick={handleResetView}
+              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              title="Fit to View"
+              aria-label="Fit to View"
+            >
+              <Maximize2 className="w-5 h-5 text-zinc-900 dark:text-zinc-100" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Snapshot loading overlay */}
       {isLoadingSnapshot && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -399,4 +526,3 @@ export default function Canvas({
     </div>
   );
 }
-
