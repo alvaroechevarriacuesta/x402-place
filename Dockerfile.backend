@@ -55,12 +55,18 @@ RUN pnpm install --frozen-lockfile --prod
 # Generate Prisma client in production (using npx to download prisma CLI temporarily)
 RUN cd packages/shared && npx -y prisma@5.20.0 generate
 
+# Verify Prisma client was generated
+RUN ls -la packages/shared/node_modules/.prisma/client || echo "Prisma client not in expected location"
+
 # Copy built backend files (bundled with all dependencies)
 COPY --from=builder /app/packages/backend/dist ./packages/backend/dist
+
+# Set NODE_PATH to help Node find modules in the monorepo
+ENV NODE_PATH=/app/node_modules:/app/packages/shared/node_modules
 
 # Expose port
 EXPOSE 3000
 
-# Start the application
+# Start the application from the app root
 CMD ["node", "packages/backend/dist/server.js"]
 
