@@ -1,9 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Link from 'next/link';
-import { LogoContainer } from './_components/layout/logo';
-import { Logo } from '@/src/components/logo';
-import { ColorPicker } from '@/src/components/color-picker';
+import { Navbar } from './_components/layout/navbar';
+import { ColorProvider } from './_contexts/color-context';
 
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
@@ -49,33 +47,14 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
                     storageKey="xplace-theme"
                     enableSystem={true}
                   >
-                    <div className="h-screen flex flex-col overflow-hidden">
-                      <header className="fixed top-0 left-0 right-0 w-full flex flex-col pt-4 pb-2 justify-center bg-card z-50 border-b border-zinc-200 dark:border-zinc-800">
-                        <div className="flex items-center justify-between w-full px-2 md:px-6 h-10">
-                          <div className="pl-12 md:pl-16 flex items-center gap-2 md:gap-3">
-                            <LogoContainer>
-                              <Link href="/" prefetch={false}>
-                                <Logo className="size-full aspect-square" />
-                              </Link>
-                            </LogoContainer>
-                            <div>
-                              <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-                                x402/place
-                              </h1>
-                              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                                Collaborative pixel canvas
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1 md:gap-2">
-                            <ColorPicker />
-                          </div>
-                        </div>
-                      </header>
-                      <div className="bg-background flex-1 flex flex-col overflow-hidden pt-[72px]">
-                        {children}
+                    <ColorProvider>
+                      <div className="h-screen flex flex-col overflow-hidden">
+                        <Navbar />
+                        <main className="flex-1 overflow-hidden bg-zinc-100 dark:bg-zinc-900">
+                          {children}
+                        </main>
                       </div>
-                    </div>
+                    </ColorProvider>
                   </ThemeProvider>
       </body>
     </html>
