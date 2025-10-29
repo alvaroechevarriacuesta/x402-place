@@ -217,7 +217,7 @@ export default function Minimap({
   return (
     <div
       ref={containerRef}
-      className="rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800"
+      className="rounded-lg overflow-hidden border border-border bg-muted"
       style={{ width: minimapSize, height: minimapSize }}
     >
       <canvas

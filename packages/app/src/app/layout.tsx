@@ -50,7 +50,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
                     <ColorProvider>
                       <div className="h-screen flex flex-col overflow-hidden">
                         <Navbar />
-                        <main className="flex-1 overflow-hidden bg-zinc-100 dark:bg-zinc-900">
+                        <main className="flex-1 overflow-hidden bg-background">
                           {children}
                         </main>
                       </div>

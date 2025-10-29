@@ -48,6 +48,9 @@ export default function Canvas({
 
   // Drawing function
   const drawGrid = useCallback(() => {
+    // Don't draw until view is initialized
+    if (!hasInitializedView.current) return;
+    
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -264,7 +267,8 @@ export default function Canvas({
       event.preventDefault();
 
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      const container = containerRef.current;
+      if (!canvas || !container) return;
 
       // Check if there's horizontal scrolling
       if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
@@ -279,9 +283,20 @@ export default function Canvas({
         const mouseX = event.clientX - rect.left;
         const mouseY = event.clientY - rect.top;
 
+        // Calculate the minimum scale (fit to view)
+        const containerRect = container.getBoundingClientRect();
+        const gridPixelWidth = gridWidth * pixelSize;
+        const gridPixelHeight = gridHeight * pixelSize;
+        const scaleX = (containerRect.width * 0.9) / gridPixelWidth;
+        const scaleY = (containerRect.height * 0.9) / gridPixelHeight;
+        const minScale = Math.min(scaleX, scaleY);
+
         // Calculate zoom
         const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
-        const newScale = Math.min(Math.max(scale * zoomFactor, 0.1), 10);
+        const newScale = Math.min(Math.max(scale * zoomFactor, minScale * 0.95), 10);
+
+        // Only update if scale actually changed
+        if (Math.abs(newScale - scale) < 0.001) return;
 
         // Adjust offset to zoom towards mouse position
         const scaleChange = newScale / scale;
@@ -294,7 +309,7 @@ export default function Canvas({
         setOffset(newOffset);
       }
     },
-    [scale, offset]
+    [scale, offset, gridWidth, gridHeight, pixelSize]
   );
 
   // Handle context menu (right-click)
@@ -305,14 +320,18 @@ export default function Canvas({
   // Zoom controls
   const handleZoomIn = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    const zoomFactor = 1.15;
+    const newScale = Math.min(scale * zoomFactor, 10);
+
+    // Only update if scale actually changed
+    if (Math.abs(newScale - scale) < 0.001) return;
 
     const rect = canvas.getBoundingClientRect();
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-
-    const zoomFactor = 1.2;
-    const newScale = Math.min(scale * zoomFactor, 10);
 
     const scaleChange = newScale / scale;
     const newOffset = {
@@ -326,14 +345,26 @@ export default function Canvas({
 
   const handleZoomOut = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
+    // Calculate the minimum scale (fit to view)
+    const rect = container.getBoundingClientRect();
+    const gridPixelWidth = gridWidth * pixelSize;
+    const gridPixelHeight = gridHeight * pixelSize;
+    const scaleX = (rect.width * 0.9) / gridPixelWidth;
+    const scaleY = (rect.height * 0.9) / gridPixelHeight;
+    const minScale = Math.min(scaleX, scaleY);
 
-    const zoomFactor = 0.8;
-    const newScale = Math.max(scale * zoomFactor, 0.1);
+    const zoomFactor = 1 / 1.15;
+    const newScale = Math.max(scale * zoomFactor, minScale * 0.95);
+
+    // Only update if scale actually changed
+    if (Math.abs(newScale - scale) < 0.001) return;
+
+    const canvasRect = canvas.getBoundingClientRect();
+    const centerX = canvasRect.width / 2;
+    const centerY = canvasRect.height / 2;
 
     const scaleChange = newScale / scale;
     const newOffset = {
@@ -343,7 +374,7 @@ export default function Canvas({
 
     setScale(newScale);
     setOffset(newOffset);
-  }, [scale, offset]);
+  }, [scale, offset, gridWidth, gridHeight, pixelSize]);
 
   const handleResetView = useCallback(() => {
     const canvas = canvasRef.current;
@@ -393,10 +424,8 @@ export default function Canvas({
         ctx.scale(dpr, dpr);
       }
 
-      // Fit the entire grid on initial load
+      // Set initial view on first load - start with full grid visible
       if (!hasInitializedView.current) {
-        hasInitializedView.current = true;
-        
         // Calculate the scale needed to fit the entire grid in the viewport
         const gridPixelWidth = gridWidth * pixelSize;
         const gridPixelHeight = gridHeight * pixelSize;
@@ -413,6 +442,12 @@ export default function Canvas({
           x: (rect.width - gridPixelWidth * fitScale) / 2,
           y: (rect.height - gridPixelHeight * fitScale) / 2,
         });
+        
+        // Mark as initialized - this will allow drawGrid to run
+        hasInitializedView.current = true;
+        
+        // Draw the grid now that view is initialized
+        setTimeout(() => drawGrid(), 0);
       } else {
         drawGrid();
       }
@@ -468,27 +503,27 @@ export default function Canvas({
           <div className="flex gap-2 justify-center">
             <button
               onClick={handleZoomIn}
-              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2 rounded-lg hover:bg-muted transition-colors"
               title="Zoom In"
               aria-label="Zoom In"
             >
-              <ZoomIn className="w-5 h-5 text-zinc-900 dark:text-zinc-100" />
+              <ZoomIn className="w-5 h-5 text-foreground" />
             </button>
             <button
               onClick={handleZoomOut}
-              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2 rounded-lg hover:bg-muted transition-colors"
               title="Zoom Out"
               aria-label="Zoom Out"
             >
-              <ZoomOut className="w-5 h-5 text-zinc-900 dark:text-zinc-100" />
+              <ZoomOut className="w-5 h-5 text-foreground" />
             </button>
             <button
               onClick={handleResetView}
-              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2 rounded-lg hover:bg-muted transition-colors"
               title="Fit to View"
               aria-label="Fit to View"
             >
-              <Maximize2 className="w-5 h-5 text-zinc-900 dark:text-zinc-100" />
+              <Maximize2 className="w-5 h-5 text-foreground" />
             </button>
           </div>
         </div>
@@ -497,10 +532,10 @@ export default function Canvas({
       {/* Snapshot loading overlay */}
       {isLoadingSnapshot && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-xl p-6 text-center">
+          <div className="bg-card rounded-lg shadow-xl p-6 text-center">
             <div className="flex flex-col gap-3 items-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <div className="text-sm font-medium">Loading canvas...</div>
+              <div className="text-sm font-medium text-card-foreground">Loading canvas...</div>
               <div className="text-xs text-muted-foreground">
                 Fetching pixel data from the database
               </div>
@@ -512,10 +547,10 @@ export default function Canvas({
       {/* Payment processing overlay */}
       {isPaying && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-xl p-6 text-center">
+          <div className="bg-card rounded-lg shadow-xl p-6 text-center">
             <div className="flex flex-col gap-3 items-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <div className="text-sm font-medium">Processing payment...</div>
+              <div className="text-sm font-medium text-card-foreground">Processing payment...</div>
               <div className="text-xs text-muted-foreground">
                 Please confirm the transaction in your wallet
               </div>

@@ -9,7 +9,7 @@ export function Navbar() {
   const { selectedColor, setSelectedColor } = useColor();
 
   return (
-    <header className="w-full flex-shrink-0 bg-card border-b border-zinc-200 dark:border-zinc-800">
+    <header className="w-full flex-shrink-0 bg-card border-b border-border">
       <div className="flex items-center justify-between w-full px-4 md:px-6 py-3">
         <div className="flex items-center gap-3">
           <Link href="/" prefetch={false} className="flex-shrink-0">
@@ -18,16 +18,16 @@ export function Navbar() {
             </div>
           </Link>
           <div className="flex flex-col">
-            <h1 className="text-xl md:text-2xl font-bold text-zinc-900 dark:text-zinc-100 leading-tight">
+            <h1 className="text-xl md:text-2xl font-bold text-card-foreground leading-tight">
               x402/place
             </h1>
-            <p className="text-xs md:text-sm text-zinc-600 dark:text-zinc-400 leading-tight">
+            <p className="text-xs md:text-sm text-muted-foreground leading-tight">
               Collaborative pixel canvas
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 md:gap-3">
-          <span className="text-xs md:text-sm font-medium text-zinc-600 dark:text-zinc-400">
+          <span className="text-xs md:text-sm font-medium text-muted-foreground">
             Color:
           </span>
           <ColorPicker 
