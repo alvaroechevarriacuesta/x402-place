@@ -11,20 +11,30 @@ FROM base AS builder
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/backend/package.json ./packages/backend/
 COPY packages/shared/package.json ./packages/shared/
+
+# Install dependencies first (this creates the workspace symlinks)
+RUN pnpm install --frozen-lockfile
+
+# Now copy source files
 COPY packages/shared/prisma ./packages/shared/prisma
 COPY packages/shared/lib ./packages/shared/lib
 COPY packages/shared/types ./packages/shared/types
 COPY packages/backend/src ./packages/backend/src
+COPY packages/backend/tsconfig.json ./packages/backend/
 COPY tsconfig.json ./
-
-# Install all dependencies
-RUN pnpm install --frozen-lockfile
 
 # Generate Prisma Client
 RUN cd packages/shared && pnpm db:generate
 
+# Debug: Check directory structure before build
+RUN echo "=== Checking directory structure ===" && \
+    ls -la packages/backend/ && \
+    echo "=== Checking node_modules ===" && \
+    ls -la node_modules/@x402place/ || echo "No @x402place in root node_modules" && \
+    ls -la packages/backend/node_modules/@x402place/ || echo "No @x402place in backend node_modules"
+
 # Build TypeScript
-RUN cd packages/backend && pnpm build
+RUN cd packages/backend && pnpm build && ls -la dist
 
 # Production stage
 FROM node:20-alpine AS production
@@ -36,15 +46,14 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/backend/package.json ./packages/backend/
 COPY packages/shared/package.json ./packages/shared/
 
-# Install production dependencies only
-RUN pnpm install --frozen-lockfile --prod
-
-# Copy Prisma schema and migrations for runtime
+# Copy Prisma schema (needed before installing deps)
 COPY packages/shared/prisma ./packages/shared/prisma
 
-# Copy generated Prisma Client from builder stage
-COPY --from=builder /app/packages/shared/node_modules/.prisma ./packages/shared/node_modules/.prisma
-COPY --from=builder /app/packages/shared/node_modules/@prisma/client ./packages/shared/node_modules/@prisma/client
+# Install production dependencies (this will also install @prisma/client)
+RUN pnpm install --frozen-lockfile --prod
+
+# Generate Prisma client in production (using npx to download prisma CLI temporarily)
+RUN cd packages/shared && npx -y prisma@5.20.0 generate
 
 # Copy built backend files
 COPY --from=builder /app/packages/backend/dist ./packages/backend/dist
