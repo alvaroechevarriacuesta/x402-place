@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Link from 'next/link';
 import { LogoContainer } from './_components/layout/logo';
 import { Logo } from '@/src/components/logo';
-import { AnimatedThemeToggler } from '@/src/components/magicui/animated-theme-toggler';
 import { ColorPicker } from '@/src/components/color-picker';
 
 import "./globals.css";
@@ -53,7 +52,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
                     <div className="h-screen flex flex-col overflow-hidden">
                       <header className="fixed top-0 left-0 right-0 w-full flex flex-col pt-4 pb-2 justify-center bg-card z-50 border-b border-zinc-200 dark:border-zinc-800">
                         <div className="flex items-center justify-between w-full px-2 md:px-6 h-10">
-                          <div className="pl-8 md:pl-8 flex items-center gap-2 md:gap-3">
+                          <div className="pl-12 md:pl-16 flex items-center gap-2 md:gap-3">
                             <LogoContainer>
                               <Link href="/" prefetch={false}>
                                 <Logo className="size-full aspect-square" />
@@ -70,11 +69,10 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
                           </div>
                           <div className="flex items-center gap-1 md:gap-2">
                             <ColorPicker />
-                            {/* <AnimatedThemeToggler /> */}
                           </div>
                         </div>
                       </header>
-                      <div className="bg-background flex-1 flex flex-col overflow-hidden">
+                      <div className="bg-background flex-1 flex flex-col overflow-hidden pt-[72px]">
                         {children}
                       </div>
                     </div>

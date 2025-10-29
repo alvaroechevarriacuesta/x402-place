@@ -19,19 +19,19 @@ export const Logo = React.forwardRef<HTMLDivElement, LogoProps>(
         {...props}
       >
         <Image
-          src="/logo.svg"
+          src="/logo.png"
           alt="xPlace Logo"
-          width={200}
-          height={200}
-          className={cn('dark:hidden size-6', className)}
+          width={64}
+          height={64}
+          className={cn('dark:hidden', className)}
           priority={priority}
         />
         <Image
-          src="/logo.svg"
+          src="/logo.png"
           alt="xPlace Logo"
-          width={200}
-          height={200}
-          className={cn('hidden dark:block size-6', className)}
+          width={64}
+          height={64}
+          className={cn('hidden dark:block', className)}
           priority={priority}
         />
       </div>
