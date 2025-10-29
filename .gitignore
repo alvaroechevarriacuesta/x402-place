@@ -4,6 +4,7 @@
 node_modules/
 /.pnp
 .turbo
+.next/
 .pnpm-store
 .pnp.*
 .yarn/*
@@ -16,7 +17,6 @@ node_modules/
 /coverage
 
 # next.js
-/.next/
 /out/
 
 # production
