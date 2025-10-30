@@ -8,9 +8,12 @@
     "build": "turbo run build",
     "app:dev": "pnpm --filter @x402place/app run dev",
     "backend:dev": "pnpm --filter @x402place/backend run dev",
-    "worker:start": "pnpm --filter @x402place/worker run start"
+    "worker:start": "pnpm --filter @x402place/worker run start",
+    "seed": "tsx scripts/seed-db.ts"
   },
   "devDependencies": {
+    "dotenv": "^17.2.3",
+    "tsx": "^4.20.6",
     "turbo": "^2.0.0",
     "typescript": "^5.6.3"
   }

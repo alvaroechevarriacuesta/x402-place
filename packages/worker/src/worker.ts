@@ -127,7 +127,7 @@ async function startWorker() {
     } finally {
       isSnapshotting = false;
     }
-  }, 60_000); // Every 60 seconds
+  }, 60 * 60 * 1000); // Every hour
 
   while (true) {
     try {
