@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePixelPayment } from '@/src/app/_hooks/use-pixel-payment';
+import { useGetSnapshot } from '@/src/app/_hooks/use-get-snapshot';
 import Minimap from '@/src/components/minimap';
 import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 
@@ -21,6 +22,9 @@ export default function Canvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { placePixel, isPaying } = usePixelPayment();
+  
+  // Load snapshot with changes applied
+  const { canvas: snapshotCanvas, isLoadingSnapshot, error } = useGetSnapshot(gridWidth, gridHeight);
 
   // Grid state - stores the color of each pixel
   const gridRef = useRef<string[][]>(
@@ -29,9 +33,6 @@ export default function Canvas({
       .map(() => Array(gridWidth).fill('#FFFFFF'))
   );
 
-  // Loading state for snapshot
-  const [isLoadingSnapshot, setIsLoadingSnapshot] = useState(true);
-  const hasLoadedSnapshot = useRef(false);
   const hasInitializedView = useRef(false);
 
   // Pan and zoom state
@@ -98,87 +99,36 @@ export default function Canvas({
     ctx.restore();
   }, [offset, scale, gridWidth, gridHeight, pixelSize]);
 
-  // Load snapshot from API once on mount
+  // Parse snapshot canvas into grid when it's loaded
   useEffect(() => {
-    // Only load once
-    if (hasLoadedSnapshot.current) return;
+    if (!snapshotCanvas || isLoadingSnapshot) return;
 
-    const loadSnapshot = async () => {
-      try {
-        console.log('[Canvas] Loading snapshot...');
-        setIsLoadingSnapshot(true);
-        hasLoadedSnapshot.current = true;
+    console.log('[Canvas] Parsing snapshot canvas into grid...');
+    const ctx = snapshotCanvas.getContext('2d');
+    if (!ctx) return;
 
-        // Fetch the PNG snapshot from the API
-        const response = await fetch('/api/snapshot');
+    // Read pixel data from the snapshot canvas
+    const imageData = ctx.getImageData(0, 0, gridWidth, gridHeight);
+    const data = imageData.data;
 
-        if (!response.ok) {
-          throw new Error('Failed to load snapshot');
-        }
+    // Update the grid with colors from the snapshot canvas
+    for (let y = 0; y < gridHeight; y++) {
+      for (let x = 0; x < gridWidth; x++) {
+        const idx = (y * gridWidth + x) * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
 
-        // Get the image as a blob
-        const blob = await response.blob();
-        console.log('[Canvas] Snapshot blob size:', blob.size);
-
-        // Create an image element to load the PNG
-        const img = new Image();
-        const url = URL.createObjectURL(blob);
-
-        img.onload = () => {
-          console.log('[Canvas] Snapshot image loaded, parsing pixels...');
-          // Create a temporary canvas to read pixel data
-          const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = gridWidth;
-          tempCanvas.height = gridHeight;
-          const tempCtx = tempCanvas.getContext('2d');
-
-          if (tempCtx) {
-            // Draw the image onto the temporary canvas
-            tempCtx.drawImage(img, 0, 0);
-
-            // Read pixel data from the image
-            const imageData = tempCtx.getImageData(0, 0, gridWidth, gridHeight);
-            const data = imageData.data;
-
-            // Update the grid with colors from the image
-            for (let y = 0; y < gridHeight; y++) {
-              for (let x = 0; x < gridWidth; x++) {
-                const idx = (y * gridWidth + x) * 4;
-                const r = data[idx];
-                const g = data[idx + 1];
-                const b = data[idx + 2];
-
-                // Convert RGB to hex color
-                const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
-                gridRef.current[y][x] = hex;
-              }
-            }
-
-            console.log('[Canvas] Snapshot loaded successfully');
-            // Note: drawGrid will be called by the drawGrid useEffect
-          }
-
-          // Clean up
-          URL.revokeObjectURL(url);
-          setIsLoadingSnapshot(false);
-        };
-
-        img.onerror = () => {
-          console.error('[Canvas] Failed to load snapshot image');
-          URL.revokeObjectURL(url);
-          setIsLoadingSnapshot(false);
-        };
-
-        img.src = url;
-      } catch (error) {
-        console.error('[Canvas] Error loading snapshot:', error);
-        setIsLoadingSnapshot(false);
+        // Convert RGB to hex color
+        const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
+        gridRef.current[y][x] = hex;
       }
-    };
+    }
 
-    loadSnapshot();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
+    console.log('[Canvas] Snapshot grid populated successfully');
+    // Trigger a redraw
+    drawGrid();
+  }, [snapshotCanvas, isLoadingSnapshot, gridWidth, gridHeight, drawGrid]);
 
   // Handle canvas click to place pixel
   const handleCanvasClick = useCallback(
@@ -537,7 +487,21 @@ export default function Canvas({
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               <div className="text-sm font-medium text-card-foreground">Loading canvas...</div>
               <div className="text-xs text-muted-foreground">
-                Fetching pixel data from the database
+                Fetching snapshot and applying changes
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Snapshot error overlay */}
+      {error && !isLoadingSnapshot && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+          <div className="bg-card rounded-lg shadow-xl p-6 text-center">
+            <div className="flex flex-col gap-3 items-center">
+              <div className="text-sm font-medium text-destructive">Failed to load canvas</div>
+              <div className="text-xs text-muted-foreground">
+                {error.message}
               </div>
             </div>
           </div>
