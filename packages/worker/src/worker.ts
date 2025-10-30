@@ -1,22 +1,75 @@
 import { getRedis } from "@x402place/shared/lib/redis";
 import { PixelUpdateEvent } from "@x402place/shared/types/pixel";
 import { upsertPixels, saveEvents, getAllPixels, saveSnapshot } from "@x402place/shared/lib/canvas";
+import { put } from "@vercel/blob";
+import { PNG } from "pngjs";
 
 const STREAM_KEY = "canvas:events";
 const GROUP_NAME = "workers";
 const CONSUMER_NAME = "worker-1";
 const BATCH_INTERVAL = 500; // ms
 
+// Canvas dimensions - should match frontend
+const CANVAS_WIDTH = 1000;
+const CANVAS_HEIGHT = 1000;
+
 async function generateSnapshot() {
   try {
+    console.log("Starting snapshot generation...");
     const pixels = await getAllPixels();
-    // In production, you would generate an image/blob and upload to storage
-    // For now, we'll create a simple snapshot record
+    
+    // Create PNG with canvas dimensions
+    const png = new PNG({
+      width: CANVAS_WIDTH,
+      height: CANVAS_HEIGHT,
+      filterType: -1,
+    });
+    
+    // Initialize with white background
+    for (let y = 0; y < CANVAS_HEIGHT; y++) {
+      for (let x = 0; x < CANVAS_WIDTH; x++) {
+        const idx = (CANVAS_WIDTH * y + x) << 2;
+        png.data[idx] = 255;     // R
+        png.data[idx + 1] = 255; // G
+        png.data[idx + 2] = 255; // B
+        png.data[idx + 3] = 255; // A
+      }
+    }
+    
+    // Fill in the pixels from database
+    for (const pixel of pixels) {
+      const { x, y, color } = pixel;
+      
+      // Convert hex color to RGB
+      const hex = color.replace('#', '');
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      
+      // Set pixel in PNG
+      const idx = (CANVAS_WIDTH * y + x) << 2;
+      png.data[idx] = r;
+      png.data[idx + 1] = g;
+      png.data[idx + 2] = b;
+      png.data[idx + 3] = 255; // Full opacity
+    }
+    
+    // Convert PNG to buffer
+    const buffer = PNG.sync.write(png);
+    
+    // Upload to Vercel Blob
+    const blob = await put(`canvas-snapshot-${Date.now()}.png`, buffer, {
+      access: 'public',
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    });
+    
+    // Save snapshot record
     await saveSnapshot({
-      blobUrl: `snapshot-${Date.now()}.png`, // Placeholder - implement actual blob storage
+      blobUrl: blob.url,
       timestamp: Date.now(),
     });
-    console.log("Snapshot generated");
+    
+    console.log(`Snapshot generated and uploaded: ${blob.url}`);
   } catch (err) {
     console.error("Failed to generate snapshot:", err);
   }
@@ -30,33 +83,51 @@ async function startWorker() {
     if (!err.message.includes("BUSYGROUP")) throw err;
   }
 
-  let buffer: PixelUpdateEvent[] = [];
+  let buffer: Array<{ event: PixelUpdateEvent; messageId: string }> = [];
+  let isProcessing = false;
+  let isSnapshotting = false;
 
-  let snapshotCounter = 0;
-  const SNAPSHOT_EVERY_N_BATCHES = 120; // Generate snapshot every ~60 seconds (120 * 500ms)
-
+  // Batch processing - writes events to database
   setInterval(async () => {
-    if (buffer.length === 0) return;
+    if (isProcessing || buffer.length === 0) return;
+    isProcessing = true;
+    
+    const batchToProcess = [...buffer];
+    const events = batchToProcess.map((item) => item.event);
+    
     try {
       // Save events to history
-      await saveEvents(buffer);
+      await saveEvents(events);
       
       // Upsert pixels to current state
-      await upsertPixels(buffer);
+      await upsertPixels(events);
       
-      console.log(`Processed ${buffer.length} events`);
-      buffer = [];
-      
-      // Optional: generate snapshot periodically
-      snapshotCounter++;
-      if (snapshotCounter >= SNAPSHOT_EVERY_N_BATCHES) {
-        snapshotCounter = 0;
-        await generateSnapshot();
+      // ACK only after successful database write
+      for (const item of batchToProcess) {
+        await redis.xAck(STREAM_KEY, GROUP_NAME, item.messageId);
       }
+      
+      console.log(`Processed ${batchToProcess.length} events`);
+      buffer = buffer.slice(batchToProcess.length);
     } catch (err) {
       console.error("Worker batch write error:", err);
+      // Don't ACK - let Redis recover these messages on restart
+    } finally {
+      isProcessing = false;
     }
   }, BATCH_INTERVAL);
+
+  // Separate interval for snapshot generation - runs independently
+  setInterval(async () => {
+    if (isSnapshotting) return;
+    isSnapshotting = true;
+    
+    try {
+      await generateSnapshot();
+    } finally {
+      isSnapshotting = false;
+    }
+  }, 60_000); // Every 60 seconds
 
   while (true) {
     try {
@@ -80,8 +151,7 @@ async function startWorker() {
               user_id: fields.user_id,
             };
 
-            buffer.push(event);
-            await redis.xAck(STREAM_KEY, GROUP_NAME, message.id);
+            buffer.push({ event, messageId: message.id });
           }
         }
       }
