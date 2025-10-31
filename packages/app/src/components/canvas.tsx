@@ -56,9 +56,6 @@ export default function Canvas({
     color: string;
   }
   const messageQueueRef = useRef<PixelUpdate[]>([]);
-  
-  // Redraw batching to prevent blocking during high activity
-  const pendingRedrawRef = useRef<number | null>(null);
 
   // Drawing function
   const drawGrid = useCallback(() => {
@@ -115,16 +112,55 @@ export default function Canvas({
     ctx.restore();
   }, [offset, scale, gridWidth, gridHeight, pixelSize]);
 
-  // Batched redraw function - schedules a redraw on next animation frame
-  const scheduleRedraw = useCallback(() => {
-    // If a redraw is already scheduled, don't schedule another
-    if (pendingRedrawRef.current !== null) return;
+  // Fast single pixel update - doesn't redraw the entire canvas
+  const drawSinglePixel = useCallback((x: number, y: number, color: string) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    pendingRedrawRef.current = requestAnimationFrame(() => {
-      drawGrid();
-      pendingRedrawRef.current = null;
-    });
-  }, [drawGrid]);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Save context state
+    ctx.save();
+
+    // Apply transformations
+    ctx.translate(offset.x, offset.y);
+    ctx.scale(scale, scale);
+
+    // Draw the single pixel
+    ctx.fillStyle = color;
+    ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+
+    // Redraw grid lines for this pixel if needed
+    if (scale >= 0.25) {
+      ctx.strokeStyle = '#E5E5E5';
+      ctx.lineWidth = 0.5 / scale;
+
+      // Draw the grid lines around this pixel
+      ctx.beginPath();
+      ctx.moveTo(x * pixelSize, y * pixelSize);
+      ctx.lineTo((x + 1) * pixelSize, y * pixelSize);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo((x + 1) * pixelSize, y * pixelSize);
+      ctx.lineTo((x + 1) * pixelSize, (y + 1) * pixelSize);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x * pixelSize, (y + 1) * pixelSize);
+      ctx.lineTo((x + 1) * pixelSize, (y + 1) * pixelSize);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x * pixelSize, y * pixelSize);
+      ctx.lineTo(x * pixelSize, (y + 1) * pixelSize);
+      ctx.stroke();
+    }
+
+    // Restore context state
+    ctx.restore();
+  }, [offset, scale, pixelSize]);
 
   // Parse snapshot canvas into grid when it's loaded (only once!)
   useEffect(() => {
@@ -169,10 +205,10 @@ export default function Canvas({
     if (x >= 0 && x < gridWidth && y >= 0 && y < gridHeight) {
       console.log('[Canvas] Applying pixel update:', { x, y, color });
       gridRef.current[y][x] = color;
-      // Use batched redraw instead of immediate drawGrid()
-      scheduleRedraw();
+      // Use fast single pixel draw for instant updates
+      drawSinglePixel(x, y, color);
     }
-  }, [gridWidth, gridHeight, scheduleRedraw]);
+  }, [gridWidth, gridHeight, drawSinglePixel]);
 
   // WebSocket connection - open immediately
   useEffect(() => {
@@ -265,9 +301,9 @@ export default function Canvas({
         // Save the previous color for rollback if needed
         const previousColor = gridRef.current[gridY][gridX];
 
-        // Optimistic update: immediately color the pixel
+        // Optimistic update: immediately color the pixel (FAST!)
         gridRef.current[gridY][gridX] = selectedColor;
-        scheduleRedraw();
+        drawSinglePixel(gridX, gridY, selectedColor);
 
         // Call the backend API
         const result = await placePixel({
@@ -279,7 +315,7 @@ export default function Canvas({
         // If the API call failed, roll back the color
         if (!result.success) {
           gridRef.current[gridY][gridX] = previousColor;
-          scheduleRedraw();
+          drawSinglePixel(gridX, gridY, previousColor);
         }
       }
     },
@@ -292,7 +328,7 @@ export default function Canvas({
       gridHeight,
       isPanning,
       placePixel,
-      scheduleRedraw,
+      drawSinglePixel,
     ]
   );
 
@@ -535,15 +571,6 @@ export default function Canvas({
   useEffect(() => {
     drawGrid();
   }, [drawGrid]);
-
-  // Cleanup pending animation frame on unmount
-  useEffect(() => {
-    return () => {
-      if (pendingRedrawRef.current !== null) {
-        cancelAnimationFrame(pendingRedrawRef.current);
-      }
-    };
-  }, []);
 
   return (
     <div ref={containerRef} className="w-full h-full relative">
