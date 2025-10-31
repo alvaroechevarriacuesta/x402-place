@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { toast } from 'sonner';
 
 interface PlacePixelParams {
   x: number;
@@ -39,13 +38,9 @@ export function usePixelPayment() {
       const result = await response.json();
       console.log('[usePixelPayment] Pixel placed successfully:', result);
       
-      toast.success('Pixel placed successfully!');
-      
       return { success: true };
     } catch (error) {
       console.error('[usePixelPayment] Failed to place pixel:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to place pixel';
-      toast.error(errorMessage);
       
       return { success: false };
     } finally {

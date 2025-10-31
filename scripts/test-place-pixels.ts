@@ -12,10 +12,12 @@
  *   - square   : Draws a 20x20 blue square at (200, 200)
  *   - gradient : Draws a rainbow gradient at (150, 150)
  *   - text     : Draws "HI" text at (300, 300)
+ *   - hello    : Draws "Hello rsproule!!" in big black letters in the bottom half
  * 
  * Examples:
  *   pnpm test:pixels smiley
  *   pnpm test:pixels square
+ *   pnpm test:pixels hello
  *   BASE_URL=https://your-backend.railway.app pnpm test:pixels gradient
  * 
  * Environment Variables:
@@ -173,6 +175,140 @@ function generateText(startX: number, startY: number): Pixel[] {
   return pixels;
 }
 
+// 5x7 pixel font patterns for each letter
+const FONT_5X7: { [key: string]: number[][] } = {
+  'H': [
+    [1,0,0,0,1],
+    [1,0,0,0,1],
+    [1,0,0,0,1],
+    [1,1,1,1,1],
+    [1,0,0,0,1],
+    [1,0,0,0,1],
+    [1,0,0,0,1]
+  ],
+  'e': [
+    [0,0,0,0,0],
+    [0,1,1,1,0],
+    [1,0,0,0,1],
+    [1,1,1,1,1],
+    [1,0,0,0,0],
+    [0,1,1,1,1],
+    [0,0,0,0,0]
+  ],
+  'l': [
+    [1,1,0,0,0],
+    [0,1,0,0,0],
+    [0,1,0,0,0],
+    [0,1,0,0,0],
+    [0,1,0,0,0],
+    [1,1,1,0,0],
+    [0,0,0,0,0]
+  ],
+  'o': [
+    [0,0,0,0,0],
+    [0,1,1,1,0],
+    [1,0,0,0,1],
+    [1,0,0,0,1],
+    [1,0,0,0,1],
+    [0,1,1,1,0],
+    [0,0,0,0,0]
+  ],
+  'r': [
+    [0,0,0,0,0],
+    [0,1,0,1,1],
+    [0,1,1,0,0],
+    [0,1,0,0,0],
+    [0,1,0,0,0],
+    [0,1,0,0,0],
+    [0,0,0,0,0]
+  ],
+  's': [
+    [0,0,0,0,0],
+    [0,1,1,1,1],
+    [1,0,0,0,0],
+    [0,1,1,1,0],
+    [0,0,0,0,1],
+    [1,1,1,1,0],
+    [0,0,0,0,0]
+  ],
+  'p': [
+    [0,0,0,0,0],
+    [1,1,1,1,0],
+    [1,0,0,0,1],
+    [1,1,1,1,0],
+    [1,0,0,0,0],
+    [1,0,0,0,0],
+    [1,0,0,0,0]
+  ],
+  'u': [
+    [0,0,0,0,0],
+    [1,0,0,0,1],
+    [1,0,0,0,1],
+    [1,0,0,0,1],
+    [1,0,0,0,1],
+    [0,1,1,1,1],
+    [0,0,0,0,0]
+  ],
+  '!': [
+    [0,1,0,0,0],
+    [0,1,0,0,0],
+    [0,1,0,0,0],
+    [0,1,0,0,0],
+    [0,0,0,0,0],
+    [0,1,0,0,0],
+    [0,0,0,0,0]
+  ],
+  ' ': [
+    [0,0,0,0,0],
+    [0,0,0,0,0],
+    [0,0,0,0,0],
+    [0,0,0,0,0],
+    [0,0,0,0,0],
+    [0,0,0,0,0],
+    [0,0,0,0,0]
+  ]
+};
+
+// Generate "Hello rsproule!!" in big black letters
+function generateHelloMessage(startX: number, startY: number): Pixel[] {
+  const pixels: Pixel[] = [];
+  const color = '#000000'; // Black
+  const scale = 3; // Scale up each letter by 3x (so 5x7 becomes 15x21)
+  const letterSpacing = 18; // Spacing between letters (in scaled pixels)
+  
+  const message = 'Hello rsproule!!';
+  let currentX = startX;
+  
+  for (const char of message) {
+    const pattern = FONT_5X7[char];
+    
+    if (pattern) {
+      // Draw the letter with scaling
+      for (let row = 0; row < pattern.length; row++) {
+        for (let col = 0; col < pattern[row].length; col++) {
+          if (pattern[row][col] === 1) {
+            // Scale up by drawing a scale x scale block for each pixel
+            for (let sy = 0; sy < scale; sy++) {
+              for (let sx = 0; sx < scale; sx++) {
+                pixels.push({
+                  x: currentX + (col * scale) + sx,
+                  y: startY + (row * scale) + sy,
+                  color
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Move to next letter position
+    currentX += letterSpacing;
+  }
+  
+  return pixels;
+}
+
 async function main() {
   console.log('🎨 Starting pixel placement test...');
   console.log(`📍 Target server: ${BASE_URL}`);
@@ -200,8 +336,14 @@ async function main() {
         console.log('✍️  Drawing "HI" text at (300, 300)...\n');
         pixels = generateText(300, 300);
         break;
+      case 'hello':
+        console.log('👋 Drawing "Hello rsproule!!" in big black letters...\n');
+        // Position in bottom half of canvas (1000x1000, so bottom half is y=500-1000)
+        // Center horizontally: message is ~288 pixels wide, so start at (1000-288)/2 = ~356
+        pixels = generateHelloMessage(200, 700);
+        break;
       default:
-        console.log('❌ Unknown pattern. Available: smiley, square, gradient, text');
+        console.log('❌ Unknown pattern. Available: smiley, square, gradient, text, hello');
         process.exit(1);
     }
 
