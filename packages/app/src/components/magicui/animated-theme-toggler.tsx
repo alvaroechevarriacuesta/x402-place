@@ -8,9 +8,9 @@ import { useTheme } from 'next-themes';
 
 import { flushSync } from 'react-dom';
 
-import { Button } from '@/src/components/ui/button';
+import { Button } from '@/components/ui/button';
 
-import { cn } from '@/src/lib/utils';
+import { cn } from '@/lib/utils';
 
 type props = {
   className?: string;

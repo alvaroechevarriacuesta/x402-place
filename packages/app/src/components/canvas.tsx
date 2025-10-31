@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { usePixelPayment } from '@/src/app/_hooks/use-pixel-payment';
-import { useGetSnapshot } from '@/src/app/_hooks/use-get-snapshot';
-import Minimap from '@/src/components/minimap';
+import { usePixelPayment } from '@/app/_hooks/use-pixel-payment';
+import { useGetSnapshot } from '@/app/_hooks/use-get-snapshot';
+import Minimap from '@/components/minimap';
 import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 
 interface CanvasProps {
@@ -567,7 +567,7 @@ export default function Canvas({
               viewportWidth={viewportDimensions.width}
               viewportHeight={viewportDimensions.height}
               gridRef={gridRef}
-              onNavigate={(newOffset) => setOffset(newOffset)}
+              onNavigate={(newOffset: { x: number; y: number }) => setOffset(newOffset)}
             />
           </div>
 

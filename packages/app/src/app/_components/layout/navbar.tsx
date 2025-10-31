@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { Logo } from '@/src/components/logo';
-import { ColorPicker } from '@/src/components/color-picker';
-import { useColor } from '@/src/app/_contexts/color-context';
+import { Logo } from '@/components/logo';
+import { ColorPicker } from '@/components/color-picker';
+import { useColor } from '@/app/_contexts/color-context';
 
 export function Navbar() {
   const { selectedColor, setSelectedColor } = useColor();

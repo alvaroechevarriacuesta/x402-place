@@ -1,7 +1,7 @@
 'use client';
 
-import Canvas from '@/src/components/canvas';
-import { useColor } from '@/src/app/_contexts/color-context';
+import Canvas from '@/components/canvas';
+import { useColor } from '@/app/_contexts/color-context';
 
 export default function Home() {
   const { selectedColor } = useColor();
