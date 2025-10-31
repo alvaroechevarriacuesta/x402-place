@@ -21,7 +21,7 @@ export default function Canvas({
 }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { placePixel, isPaying } = usePixelPayment();
+  const { placePixel } = usePixelPayment();
   
   // Load snapshot with changes applied
   const { canvas: snapshotCanvas, isLoadingSnapshot, error } = useGetSnapshot(gridWidth, gridHeight);
@@ -250,7 +250,7 @@ export default function Canvas({
   const handleCanvasClick = useCallback(
     async (event: React.MouseEvent<HTMLCanvasElement>) => {
       const canvas = canvasRef.current;
-      if (!canvas || isPanning || isPaying) return;
+      if (!canvas || isPanning) return;
 
       const rect = canvas.getBoundingClientRect();
       const mouseX = event.clientX - rect.left;
@@ -291,7 +291,6 @@ export default function Canvas({
       gridWidth,
       gridHeight,
       isPanning,
-      isPaying,
       placePixel,
       scheduleRedraw,
     ]
@@ -557,7 +556,7 @@ export default function Canvas({
         onMouseLeave={handleMouseUp}
         onWheel={handleWheel}
         onContextMenu={handleContextMenu}
-        className={isPaying ? 'cursor-wait' : 'cursor-crosshair'}
+        className="cursor-crosshair"
         style={{ display: 'block' }}
       />
 
@@ -632,21 +631,6 @@ export default function Canvas({
               <div className="text-sm font-medium text-destructive">Failed to load canvas</div>
               <div className="text-xs text-muted-foreground">
                 {error.message}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Payment processing overlay */}
-      {isPaying && (
-        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-card rounded-lg shadow-xl p-6 text-center">
-            <div className="flex flex-col gap-3 items-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <div className="text-sm font-medium text-card-foreground">Processing payment...</div>
-              <div className="text-xs text-muted-foreground">
-                Please confirm the transaction in your wallet
               </div>
             </div>
           </div>
