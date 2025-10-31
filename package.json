@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.12.3",
   "scripts": {
     "dev": "turbo run dev --parallel",
-    "build": "turbo run build",
+    "build": "turbo run build --filter=@x402place/app",
     "app:dev": "pnpm --filter @x402place/app run dev",
     "backend:dev": "pnpm --filter @x402place/backend run dev",
     "worker:start": "pnpm --filter @x402place/worker run start",

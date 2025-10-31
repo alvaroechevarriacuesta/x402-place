@@ -7,7 +7,7 @@ import { PNG } from "pngjs";
 const STREAM_KEY = "canvas:events";
 const GROUP_NAME = "workers";
 const CONSUMER_NAME = "worker-1";
-const BATCH_INTERVAL = 500; // ms
+const BATCH_INTERVAL = 50; // ms
 
 // Canvas dimensions - should match frontend
 const CANVAS_WIDTH = 1000;
@@ -127,7 +127,7 @@ async function startWorker() {
     } finally {
       isSnapshotting = false;
     }
-  }, 60 * 60 * 1000); // Every hour
+  }, 10 * 60 * 1000); // Every 10 minutes
 
   while (true) {
     try {
