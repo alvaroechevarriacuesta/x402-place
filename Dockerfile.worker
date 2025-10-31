@@ -21,7 +21,7 @@ COPY packages/shared/lib ./packages/shared/lib
 COPY packages/shared/types ./packages/shared/types
 COPY packages/worker/src ./packages/worker/src
 COPY packages/worker/tsconfig.json ./packages/worker/
-COPY tsconfig.json ./
+COPY tsconfig.base.json ./
 
 # Generate Prisma Client
 RUN cd packages/shared && pnpm db:generate
