@@ -90,22 +90,25 @@ export default function Canvas({
       }
     }
 
-    // Draw grid lines
-    ctx.strokeStyle = '#E5E5E5';
-    ctx.lineWidth = 0.5 / scale;
+    // Draw grid lines only when zoomed in enough
+    // Only show grid when individual pixels are reasonably visible
+    if (scale >= 0.25) {
+      ctx.strokeStyle = '#E5E5E5';
+      ctx.lineWidth = 0.5 / scale;
 
-    for (let x = 0; x <= gridWidth; x++) {
-      ctx.beginPath();
-      ctx.moveTo(x * pixelSize, 0);
-      ctx.lineTo(x * pixelSize, gridHeight * pixelSize);
-      ctx.stroke();
-    }
+      for (let x = 0; x <= gridWidth; x++) {
+        ctx.beginPath();
+        ctx.moveTo(x * pixelSize, 0);
+        ctx.lineTo(x * pixelSize, gridHeight * pixelSize);
+        ctx.stroke();
+      }
 
-    for (let y = 0; y <= gridHeight; y++) {
-      ctx.beginPath();
-      ctx.moveTo(0, y * pixelSize);
-      ctx.lineTo(gridWidth * pixelSize, y * pixelSize);
-      ctx.stroke();
+      for (let y = 0; y <= gridHeight; y++) {
+        ctx.beginPath();
+        ctx.moveTo(0, y * pixelSize);
+        ctx.lineTo(gridWidth * pixelSize, y * pixelSize);
+        ctx.stroke();
+      }
     }
 
     // Restore context state
@@ -259,19 +262,24 @@ export default function Canvas({
 
       // Check if click is within grid bounds
       if (gridX >= 0 && gridX < gridWidth && gridY >= 0 && gridY < gridHeight) {
-        try {
-          await placePixel({
-            x: gridX,
-            y: gridY,
-            color: selectedColor,
-          });
+        // Save the previous color for rollback if needed
+        const previousColor = gridRef.current[gridY][gridX];
 
-          // Update local grid state on success
-          gridRef.current[gridY][gridX] = selectedColor;
+        // Optimistic update: immediately color the pixel
+        gridRef.current[gridY][gridX] = selectedColor;
+        scheduleRedraw();
+
+        // Call the backend API
+        const result = await placePixel({
+          x: gridX,
+          y: gridY,
+          color: selectedColor,
+        });
+
+        // If the API call failed, roll back the color
+        if (!result.success) {
+          gridRef.current[gridY][gridX] = previousColor;
           scheduleRedraw();
-        } catch (error) {
-          // Error is already handled by the mutation (toast shown)
-          console.error('Failed to place pixel:', error);
         }
       }
     },

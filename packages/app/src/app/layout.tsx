@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Navbar } from './_components/layout/navbar';
 import { ColorProvider } from './_contexts/color-context';
+import { Toaster } from 'sonner';
 
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
@@ -36,7 +37,7 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
@@ -55,6 +56,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
                         </main>
                       </div>
                     </ColorProvider>
+                    <Toaster richColors position="bottom-right" />
                   </ThemeProvider>
       </body>
     </html>
