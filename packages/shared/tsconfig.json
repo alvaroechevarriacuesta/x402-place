@@ -5,13 +5,11 @@
     "module": "CommonJS",
     "lib": ["ES2022"],
     "moduleResolution": "node",
-    "outDir": "./dist",
-    "rootDir": "./src",
     "noEmit": false,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*"],
+  "include": ["lib/**/*", "types/**/*"],
   "exclude": ["node_modules", "dist"]
 }
 
