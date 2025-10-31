@@ -9,7 +9,8 @@
     "app:dev": "pnpm --filter @x402place/app run dev",
     "backend:dev": "pnpm --filter @x402place/backend run dev",
     "worker:start": "pnpm --filter @x402place/worker run start",
-    "seed": "tsx scripts/seed-db.ts"
+    "seed": "tsx scripts/seed-db.ts",
+    "test:pixels": "tsx scripts/test-place-pixels.ts"
   },
   "devDependencies": {
     "dotenv": "^17.2.3",

@@ -34,6 +34,7 @@ export default function Canvas({
   );
 
   const hasInitializedView = useRef(false);
+  const hasParsedSnapshot = useRef(false);
 
   // Pan and zoom state
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -46,6 +47,18 @@ export default function Canvas({
     width: 0,
     height: 0,
   });
+
+  // WebSocket state and message queue
+  const wsRef = useRef<WebSocket | null>(null);
+  interface PixelUpdate {
+    x: number;
+    y: number;
+    color: string;
+  }
+  const messageQueueRef = useRef<PixelUpdate[]>([]);
+  
+  // Redraw batching to prevent blocking during high activity
+  const pendingRedrawRef = useRef<number | null>(null);
 
   // Drawing function
   const drawGrid = useCallback(() => {
@@ -99,9 +112,20 @@ export default function Canvas({
     ctx.restore();
   }, [offset, scale, gridWidth, gridHeight, pixelSize]);
 
-  // Parse snapshot canvas into grid when it's loaded
+  // Batched redraw function - schedules a redraw on next animation frame
+  const scheduleRedraw = useCallback(() => {
+    // If a redraw is already scheduled, don't schedule another
+    if (pendingRedrawRef.current !== null) return;
+
+    pendingRedrawRef.current = requestAnimationFrame(() => {
+      drawGrid();
+      pendingRedrawRef.current = null;
+    });
+  }, [drawGrid]);
+
+  // Parse snapshot canvas into grid when it's loaded (only once!)
   useEffect(() => {
-    if (!snapshotCanvas || isLoadingSnapshot) return;
+    if (!snapshotCanvas || isLoadingSnapshot || hasParsedSnapshot.current) return;
 
     console.log('[Canvas] Parsing snapshot canvas into grid...');
     const ctx = snapshotCanvas.getContext('2d');
@@ -125,10 +149,99 @@ export default function Canvas({
       }
     }
 
+    // Mark as parsed so this doesn't run again (preserving WebSocket updates)
+    hasParsedSnapshot.current = true;
+
     console.log('[Canvas] Snapshot grid populated successfully');
-    // Trigger a redraw
+    // Trigger a redraw (calling directly is fine, we only do this once)
     drawGrid();
-  }, [snapshotCanvas, isLoadingSnapshot, gridWidth, gridHeight, drawGrid]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snapshotCanvas, isLoadingSnapshot, gridWidth, gridHeight]); // drawGrid intentionally excluded
+
+  // Helper function to apply pixel update
+  const applyPixelUpdate = useCallback((pixelUpdate: PixelUpdate) => {
+    const { x, y, color } = pixelUpdate;
+    
+    // Validate bounds
+    if (x >= 0 && x < gridWidth && y >= 0 && y < gridHeight) {
+      console.log('[Canvas] Applying pixel update:', { x, y, color });
+      gridRef.current[y][x] = color;
+      // Use batched redraw instead of immediate drawGrid()
+      scheduleRedraw();
+    }
+  }, [gridWidth, gridHeight, scheduleRedraw]);
+
+  // WebSocket connection - open immediately
+  useEffect(() => {
+    const baseUrl = process.env.NEXT_PUBLIC_WS_BASE_URL || 'http://localhost:3001';
+    // Convert http(s) to ws(s) and adjust port (WS runs on PORT + 1)
+    let wsUrl = baseUrl.replace(/^http/, 'ws');
+    
+    // If using default localhost, WS is on port 3002 (3001 + 1)
+    if (wsUrl.includes('localhost:3001')) {
+      wsUrl = wsUrl.replace('3001', '3002');
+    }
+    
+    const wsFullUrl = `${wsUrl}/ws`;
+
+    console.log('[Canvas] Connecting to WebSocket:', wsFullUrl);
+    const ws = new WebSocket(wsFullUrl);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log('[Canvas] WebSocket connected');
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        
+        if (message.type === 'pixel_update' && message.payload) {
+          const pixelUpdate = message.payload as PixelUpdate;
+          
+          // Queue if loading snapshot
+          if (isLoadingSnapshot) {
+            console.log('[Canvas] Queuing pixel update during load:', pixelUpdate);
+            messageQueueRef.current.push(pixelUpdate);
+          } else {
+            // Apply immediately (batched redraw handles smoothness)
+            applyPixelUpdate(pixelUpdate);
+          }
+        }
+      } catch (error) {
+        console.error('[Canvas] Failed to parse WebSocket message:', error);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error('[Canvas] WebSocket error:', error);
+    };
+
+    ws.onclose = () => {
+      console.log('[Canvas] WebSocket disconnected');
+    };
+
+    // Cleanup on unmount
+    return () => {
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+        ws.close();
+      }
+    };
+  }, [isLoadingSnapshot, applyPixelUpdate]); // Include dependencies
+
+  // Process queued messages once snapshot is loaded
+  useEffect(() => {
+    if (!isLoadingSnapshot && messageQueueRef.current.length > 0) {
+      console.log('[Canvas] Processing', messageQueueRef.current.length, 'queued pixel updates');
+      
+      messageQueueRef.current.forEach(pixelUpdate => {
+        applyPixelUpdate(pixelUpdate);
+      });
+      
+      // Clear the queue
+      messageQueueRef.current = [];
+    }
+  }, [isLoadingSnapshot, applyPixelUpdate]);
 
   // Handle canvas click to place pixel
   const handleCanvasClick = useCallback(
@@ -155,7 +268,7 @@ export default function Canvas({
 
           // Update local grid state on success
           gridRef.current[gridY][gridX] = selectedColor;
-          drawGrid();
+          scheduleRedraw();
         } catch (error) {
           // Error is already handled by the mutation (toast shown)
           console.error('Failed to place pixel:', error);
@@ -172,7 +285,7 @@ export default function Canvas({
       isPanning,
       isPaying,
       placePixel,
-      drawGrid,
+      scheduleRedraw,
     ]
   );
 
@@ -415,6 +528,15 @@ export default function Canvas({
   useEffect(() => {
     drawGrid();
   }, [drawGrid]);
+
+  // Cleanup pending animation frame on unmount
+  useEffect(() => {
+    return () => {
+      if (pendingRedrawRef.current !== null) {
+        cancelAnimationFrame(pendingRedrawRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div ref={containerRef} className="w-full h-full relative">
