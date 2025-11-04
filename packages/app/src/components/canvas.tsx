@@ -3,14 +3,24 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePixelPayment } from '@/app/_hooks/use-pixel-payment';
 import { useGetSnapshot } from '@/app/_hooks/use-get-snapshot';
-import Minimap from '@/components/minimap';
-import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 
 interface CanvasProps {
   gridWidth?: number;
   gridHeight?: number;
   pixelSize?: number;
   selectedColor: string;
+  // Callbacks to expose state to parent
+  onStateChange?: (state: {
+    offset: { x: number; y: number };
+    scale: number;
+    viewportDimensions: { width: number; height: number };
+    gridRef: React.RefObject<string[][]>;
+    isLoadingSnapshot: boolean;
+    handleZoomIn: () => void;
+    handleZoomOut: () => void;
+    handleResetView: () => void;
+    setOffset: (offset: { x: number; y: number }) => void;
+  }) => void;
 }
 
 export default function Canvas({
@@ -18,6 +28,7 @@ export default function Canvas({
   gridHeight = 1000,
   pixelSize = 20,
   selectedColor,
+  onStateChange,
 }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -393,13 +404,13 @@ export default function Canvas({
         const containerRect = container.getBoundingClientRect();
         const gridPixelWidth = gridWidth * pixelSize;
         const gridPixelHeight = gridHeight * pixelSize;
-        const scaleX = (containerRect.width * 0.9) / gridPixelWidth;
-        const scaleY = (containerRect.height * 0.9) / gridPixelHeight;
+        const scaleX = containerRect.width / gridPixelWidth;
+        const scaleY = containerRect.height / gridPixelHeight;
         const minScale = Math.min(scaleX, scaleY);
 
         // Calculate zoom
         const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
-        const newScale = Math.min(Math.max(scale * zoomFactor, minScale * 0.95), 10);
+        const newScale = Math.min(Math.max(scale * zoomFactor, minScale), 10);
 
         // Only update if scale actually changed
         if (Math.abs(newScale - scale) < 0.001) return;
@@ -458,12 +469,12 @@ export default function Canvas({
     const rect = container.getBoundingClientRect();
     const gridPixelWidth = gridWidth * pixelSize;
     const gridPixelHeight = gridHeight * pixelSize;
-    const scaleX = (rect.width * 0.9) / gridPixelWidth;
-    const scaleY = (rect.height * 0.9) / gridPixelHeight;
+    const scaleX = rect.width / gridPixelWidth;
+    const scaleY = rect.height / gridPixelHeight;
     const minScale = Math.min(scaleX, scaleY);
 
     const zoomFactor = 1 / 1.15;
-    const newScale = Math.max(scale * zoomFactor, minScale * 0.95);
+    const newScale = Math.max(scale * zoomFactor, minScale);
 
     // Only update if scale actually changed
     if (Math.abs(newScale - scale) < 0.001) return;
@@ -493,9 +504,9 @@ export default function Canvas({
     const gridPixelWidth = gridWidth * pixelSize;
     const gridPixelHeight = gridHeight * pixelSize;
 
-    // Add some padding (90% of viewport)
-    const scaleX = (rect.width * 0.9) / gridPixelWidth;
-    const scaleY = (rect.height * 0.9) / gridPixelHeight;
+    // Fill the entire container (100% of viewport)
+    const scaleX = rect.width / gridPixelWidth;
+    const scaleY = rect.height / gridPixelHeight;
     const fitScale = Math.min(scaleX, scaleY);
 
     setScale(fitScale);
@@ -536,9 +547,9 @@ export default function Canvas({
         const gridPixelWidth = gridWidth * pixelSize;
         const gridPixelHeight = gridHeight * pixelSize;
         
-        // Add some padding (90% of viewport)
-        const scaleX = (rect.width * 0.9) / gridPixelWidth;
-        const scaleY = (rect.height * 0.9) / gridPixelHeight;
+        // Fill the entire container (100% of viewport)
+        const scaleX = rect.width / gridPixelWidth;
+        const scaleY = rect.height / gridPixelHeight;
         const fitScale = Math.min(scaleX, scaleY);
         
         setScale(fitScale);
@@ -572,6 +583,23 @@ export default function Canvas({
     drawGrid();
   }, [drawGrid]);
 
+  // Expose state to parent component
+  useEffect(() => {
+    if (onStateChange) {
+      onStateChange({
+        offset,
+        scale,
+        viewportDimensions,
+        gridRef,
+        isLoadingSnapshot,
+        handleZoomIn,
+        handleZoomOut,
+        handleResetView,
+        setOffset,
+      });
+    }
+  }, [offset, scale, viewportDimensions, isLoadingSnapshot, handleZoomIn, handleZoomOut, handleResetView, onStateChange]);
+
   return (
     <div ref={containerRef} className="w-full h-full relative">
       <canvas
@@ -586,54 +614,6 @@ export default function Canvas({
         className="cursor-crosshair"
         style={{ display: 'block' }}
       />
-
-      {/* Minimap with zoom controls */}
-      {!isLoadingSnapshot && viewportDimensions.width > 0 && (
-        <div className="absolute bottom-4 right-4 flex flex-col gap-3">
-          {/* Minimap */}
-          <div>
-            <Minimap
-              gridWidth={gridWidth}
-              gridHeight={gridHeight}
-              pixelSize={pixelSize}
-              offset={offset}
-              scale={scale}
-              viewportWidth={viewportDimensions.width}
-              viewportHeight={viewportDimensions.height}
-              gridRef={gridRef}
-              onNavigate={(newOffset: { x: number; y: number }) => setOffset(newOffset)}
-            />
-          </div>
-
-          {/* Zoom control buttons - below minimap */}
-          <div className="flex gap-2 justify-center">
-            <button
-              onClick={handleZoomIn}
-              className="p-2 rounded-lg hover:bg-muted transition-colors"
-              title="Zoom In"
-              aria-label="Zoom In"
-            >
-              <ZoomIn className="w-5 h-5 text-foreground" />
-            </button>
-            <button
-              onClick={handleZoomOut}
-              className="p-2 rounded-lg hover:bg-muted transition-colors"
-              title="Zoom Out"
-              aria-label="Zoom Out"
-            >
-              <ZoomOut className="w-5 h-5 text-foreground" />
-            </button>
-            <button
-              onClick={handleResetView}
-              className="p-2 rounded-lg hover:bg-muted transition-colors"
-              title="Fit to View"
-              aria-label="Fit to View"
-            >
-              <Maximize2 className="w-5 h-5 text-foreground" />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Snapshot loading overlay */}
       {isLoadingSnapshot && (

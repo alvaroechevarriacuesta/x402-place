@@ -1,6 +1,6 @@
 'use client';
 
-import Canvas from '@/components/canvas';
+import CanvasWrapper from '@/components/canvas-wrapper';
 import { useColor } from '@/app/_contexts/color-context';
 
 export default function Home() {
@@ -8,7 +8,7 @@ export default function Home() {
 
   return (
     <div className="w-full h-full">
-      <Canvas selectedColor={selectedColor} />
+      <CanvasWrapper selectedColor={selectedColor} />
     </div>
   );
 }

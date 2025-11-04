@@ -109,7 +109,7 @@ export default function Minimap({
     const viewportRight = viewportLeft + viewportWidth / (pixelSize * scale);
     const viewportBottom = viewportTop + viewportHeight / (pixelSize * scale);
 
-    // Convert to minimap coordinates
+    // Convert to minimap coordinates (keep original values, let them extend beyond if needed)
     const minimapX = viewportLeft * pixelWidth;
     const minimapY = viewportTop * pixelHeight;
     const minimapW = (viewportRight - viewportLeft) * pixelWidth;
