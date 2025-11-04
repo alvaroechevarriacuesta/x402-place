@@ -5,7 +5,8 @@ import { ColorProvider } from './_contexts/color-context';
 
 import './globals.css';
 import { ThemeProvider } from 'next-themes';
-
+import { SessionProvider } from 'next-auth/react';
+import { ChainProvider } from './_contexts/chain/provider';
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin'],
@@ -41,21 +42,25 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          storageKey="xplace-theme"
-          enableSystem={true}
-        >
-          <ColorProvider>
-            <div className="h-screen flex flex-col overflow-hidden">
-              <Navbar />
-              <main className="flex-1 overflow-hidden bg-background">
-                {children}
-              </main>
-            </div>
-          </ColorProvider>
-        </ThemeProvider>
+        <SessionProvider>
+        <ChainProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            storageKey="xplace-theme"
+            enableSystem={true}
+          >
+            <ColorProvider>
+              <div className="h-screen flex flex-col overflow-hidden">
+                <Navbar />
+                <main className="flex-1 overflow-hidden bg-background">
+                  {children}
+                </main>
+              </div>
+            </ColorProvider>
+          </ThemeProvider>
+        </ChainProvider>
+        </SessionProvider>
       </body>
     </html>
   );
