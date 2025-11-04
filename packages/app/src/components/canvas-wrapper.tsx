@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import Canvas from './canvas';
 import Minimap from './minimap';
-import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface CanvasWrapperProps {
   gridWidth?: number;
@@ -35,6 +35,90 @@ export default function CanvasWrapper({
   const containerRef = useRef<HTMLDivElement>(null);
   const [canvasSize, setCanvasSize] = useState<number>(0);
   const [canvasState, setCanvasState] = useState<CanvasState | null>(null);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!canvasState) return;
+      
+      // Check if user is typing in an input field
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+
+      const panAmount = canvasState.viewportDimensions.height * 0.1;
+
+      switch (event.key) {
+        case 'ArrowUp':
+          event.preventDefault();
+          canvasState.setOffset({
+            x: canvasState.offset.x,
+            y: canvasState.offset.y + panAmount,
+          });
+          break;
+        case 'ArrowDown':
+          event.preventDefault();
+          canvasState.setOffset({
+            x: canvasState.offset.x,
+            y: canvasState.offset.y - panAmount,
+          });
+          break;
+        case 'ArrowLeft':
+          event.preventDefault();
+          canvasState.setOffset({
+            x: canvasState.offset.x + panAmount,
+            y: canvasState.offset.y,
+          });
+          break;
+        case 'ArrowRight':
+          event.preventDefault();
+          canvasState.setOffset({
+            x: canvasState.offset.x - panAmount,
+            y: canvasState.offset.y,
+          });
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canvasState]);
+
+  // Navigation handlers - pan by 10% of viewport
+  const handlePanUp = () => {
+    if (!canvasState) return;
+    const panAmount = canvasState.viewportDimensions.height * 0.1;
+    canvasState.setOffset({
+      x: canvasState.offset.x,
+      y: canvasState.offset.y + panAmount,
+    });
+  };
+
+  const handlePanDown = () => {
+    if (!canvasState) return;
+    const panAmount = canvasState.viewportDimensions.height * 0.1;
+    canvasState.setOffset({
+      x: canvasState.offset.x,
+      y: canvasState.offset.y - panAmount,
+    });
+  };
+
+  const handlePanLeft = () => {
+    if (!canvasState) return;
+    const panAmount = canvasState.viewportDimensions.width * 0.1;
+    canvasState.setOffset({
+      x: canvasState.offset.x + panAmount,
+      y: canvasState.offset.y,
+    });
+  };
+
+  const handlePanRight = () => {
+    if (!canvasState) return;
+    const panAmount = canvasState.viewportDimensions.width * 0.1;
+    canvasState.setOffset({
+      x: canvasState.offset.x - panAmount,
+      y: canvasState.offset.y,
+    });
+  };
 
   useEffect(() => {
     const calculateSize = () => {
@@ -97,50 +181,93 @@ export default function CanvasWrapper({
         />
       </div>
 
-      {/* Minimap and zoom controls - positioned outside the canvas, aligned with canvas bottom */}
+      {/* Controls panel - positioned outside the canvas, aligned with canvas bottom */}
       {canvasState && !canvasState.isLoadingSnapshot && canvasState.viewportDimensions.width > 0 && (
         <div 
-          className="absolute right-4 flex flex-col gap-3"
+          className="absolute right-4 flex flex-col gap-3 items-center"
           style={{
             bottom: `${padding}px`,
           }}
         >
           {/* Minimap */}
-          <div>
-            <Minimap
-              gridWidth={gridWidth}
-              gridHeight={gridHeight}
-              pixelSize={pixelSize}
-              offset={canvasState.offset}
-              scale={canvasState.scale}
-              viewportWidth={canvasState.viewportDimensions.width}
-              viewportHeight={canvasState.viewportDimensions.height}
-              gridRef={canvasState.gridRef}
-              onNavigate={(newOffset: { x: number; y: number }) => canvasState.setOffset(newOffset)}
-            />
-          </div>
+          <Minimap
+            gridWidth={gridWidth}
+            gridHeight={gridHeight}
+            pixelSize={pixelSize}
+            offset={canvasState.offset}
+            scale={canvasState.scale}
+            viewportWidth={canvasState.viewportDimensions.width}
+            viewportHeight={canvasState.viewportDimensions.height}
+            gridRef={canvasState.gridRef}
+            onNavigate={(newOffset: { x: number; y: number }) => canvasState.setOffset(newOffset)}
+          />
 
-          {/* Zoom control buttons - below minimap */}
+          {/* Zoom controls - longer buttons */}
           <div className="flex gap-2 justify-center">
             <button
-              onClick={canvasState.handleZoomIn}
-              className="p-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
-              title="Zoom In"
-              aria-label="Zoom In"
-            >
-              <ZoomIn className="w-5 h-5 text-foreground" />
-            </button>
-            <button
               onClick={canvasState.handleZoomOut}
-              className="p-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
+              className="px-4 py-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
               title="Zoom Out"
               aria-label="Zoom Out"
             >
               <ZoomOut className="w-5 h-5 text-foreground" />
             </button>
             <button
+              onClick={canvasState.handleZoomIn}
+              className="px-4 py-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
+              title="Zoom In"
+              aria-label="Zoom In"
+            >
+              <ZoomIn className="w-5 h-5 text-foreground" />
+            </button>
+          </div>
+
+          {/* Navigation D-pad with reset in center */}
+          <div className="relative w-32 h-32">
+            {/* Up button */}
+            <button
+              onClick={handlePanUp}
+              className="absolute left-1/2 top-0 -translate-x-1/2 p-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
+              title="Pan Up (Arrow Up)"
+              aria-label="Pan Up"
+            >
+              <ChevronUp className="w-5 h-5 text-foreground" />
+            </button>
+
+            {/* Down button */}
+            <button
+              onClick={handlePanDown}
+              className="absolute left-1/2 bottom-0 -translate-x-1/2 p-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
+              title="Pan Down (Arrow Down)"
+              aria-label="Pan Down"
+            >
+              <ChevronDown className="w-5 h-5 text-foreground" />
+            </button>
+
+            {/* Left button */}
+            <button
+              onClick={handlePanLeft}
+              className="absolute left-0 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
+              title="Pan Left (Arrow Left)"
+              aria-label="Pan Left"
+            >
+              <ChevronLeft className="w-5 h-5 text-foreground" />
+            </button>
+
+            {/* Right button */}
+            <button
+              onClick={handlePanRight}
+              className="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
+              title="Pan Right (Arrow Right)"
+              aria-label="Pan Right"
+            >
+              <ChevronRight className="w-5 h-5 text-foreground" />
+            </button>
+
+            {/* Reset/Fit to View button in center */}
+            <button
               onClick={canvasState.handleResetView}
-              className="p-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 p-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
               title="Fit to View"
               aria-label="Fit to View"
             >

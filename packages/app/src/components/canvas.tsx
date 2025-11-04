@@ -454,6 +454,11 @@ export default function Canvas({
     event.preventDefault();
   }, []);
 
+  // Store refs for handler functions to avoid recreating them
+  const handleZoomInRef = useRef<(() => void) | null>(null);
+  const handleZoomOutRef = useRef<(() => void) | null>(null);
+  const handleResetViewRef = useRef<(() => void) | null>(null);
+
   // Zoom controls
   const handleZoomIn = useCallback(() => {
     const canvas = canvasRef.current;
@@ -479,6 +484,8 @@ export default function Canvas({
     setScale(newScale);
     setOffset(newOffset);
   }, [scale, offset]);
+
+  handleZoomInRef.current = handleZoomIn;
 
   const handleZoomOut = useCallback(() => {
     const canvas = canvasRef.current;
@@ -513,6 +520,8 @@ export default function Canvas({
     setOffset(newOffset);
   }, [scale, offset, gridWidth, gridHeight, pixelSize]);
 
+  handleZoomOutRef.current = handleZoomOut;
+
   const handleResetView = useCallback(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
@@ -537,6 +546,8 @@ export default function Canvas({
       y: (rect.height - gridPixelHeight * fitScale) / 2,
     });
   }, [gridWidth, gridHeight, pixelSize]);
+
+  handleResetViewRef.current = handleResetView;
 
   // Resize canvas to match container
   useEffect(() => {
@@ -618,20 +629,20 @@ export default function Canvas({
 
   // Expose state to parent component
   useEffect(() => {
-    if (onStateChange) {
+    if (onStateChange && handleZoomInRef.current && handleZoomOutRef.current && handleResetViewRef.current) {
       onStateChange({
         offset,
         scale,
         viewportDimensions,
         gridRef,
         isLoadingSnapshot,
-        handleZoomIn,
-        handleZoomOut,
-        handleResetView,
+        handleZoomIn: handleZoomInRef.current,
+        handleZoomOut: handleZoomOutRef.current,
+        handleResetView: handleResetViewRef.current,
         setOffset,
       });
     }
-  }, [offset, scale, viewportDimensions, isLoadingSnapshot, handleZoomIn, handleZoomOut, handleResetView, onStateChange]);
+  }, [offset, scale, viewportDimensions, isLoadingSnapshot, onStateChange]);
 
   return (
     <div ref={containerRef} className="w-full h-full relative">
