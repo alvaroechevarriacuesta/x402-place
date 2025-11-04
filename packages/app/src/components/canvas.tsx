@@ -614,18 +614,7 @@ export default function Canvas({
     drawGrid();
   }, [drawGrid]);
 
-  // Periodic redraw every 0.5s to ensure canvas stays in sync
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      if (canvasReady.current) {
-        drawGrid();
-      }
-    }, 500);
 
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [drawGrid]);
 
   // Expose state to parent component
   useEffect(() => {
