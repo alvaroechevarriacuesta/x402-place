@@ -46,6 +46,7 @@ export default function Canvas({
 
   const hasInitializedView = useRef(false);
   const hasParsedSnapshot = useRef(false);
+  const canvasReady = useRef(false);
 
   // Pan and zoom state
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -67,6 +68,8 @@ export default function Canvas({
     color: string;
   }
   const messageQueueRef = useRef<PixelUpdate[]>([]);
+  const processingQueueRef = useRef(false);
+  const processQueueRef = useRef<() => void>(() => {});
 
   // Drawing function
   const drawGrid = useCallback(() => {
@@ -205,23 +208,54 @@ export default function Canvas({
     console.log('[Canvas] Snapshot grid populated successfully');
     // Trigger a redraw (calling directly is fine, we only do this once)
     drawGrid();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [snapshotCanvas, isLoadingSnapshot, gridWidth, gridHeight]); // drawGrid intentionally excluded
 
-  // Helper function to apply pixel update
-  const applyPixelUpdate = useCallback((pixelUpdate: PixelUpdate) => {
-    const { x, y, color } = pixelUpdate;
-    
-    // Validate bounds
-    if (x >= 0 && x < gridWidth && y >= 0 && y < gridHeight) {
-      console.log('[Canvas] Applying pixel update:', { x, y, color });
-      gridRef.current[y][x] = color;
-      // Use fast single pixel draw for instant updates
-      drawSinglePixel(x, y, color);
+    // Mark canvas as ready and process any queued messages
+    canvasReady.current = true;
+    console.log(`[Canvas] Canvas ready, processing ${messageQueueRef.current.length} queued messages`);
+    processQueue();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snapshotCanvas, isLoadingSnapshot, gridWidth, gridHeight]); // drawGrid and processQueue intentionally excluded
+
+  // Process the pixel queue in batches
+  const processQueue = useCallback(() => {
+    if (!canvasReady.current || messageQueueRef.current.length === 0 || processingQueueRef.current) {
+      return;
     }
+
+    processingQueueRef.current = true;
+
+    requestAnimationFrame(() => {
+      // Take all queued messages
+      const pixelsToProcess = messageQueueRef.current.splice(0, messageQueueRef.current.length);
+      
+      if (pixelsToProcess.length > 0) {
+        console.log(`[Canvas] Processing ${pixelsToProcess.length} queued pixel updates`);
+      }
+
+      // Apply each pixel update
+      pixelsToProcess.forEach(({ x, y, color }) => {
+        // Validate bounds
+        if (x >= 0 && x < gridWidth && y >= 0 && y < gridHeight) {
+          gridRef.current[y][x] = color;
+          drawSinglePixel(x, y, color);
+        }
+      });
+
+      processingQueueRef.current = false;
+
+      // If more messages arrived while processing, schedule another batch
+      if (messageQueueRef.current.length > 0) {
+        processQueueRef.current();
+      }
+    });
   }, [gridWidth, gridHeight, drawSinglePixel]);
 
-  // WebSocket connection - open immediately
+  // Keep the ref updated with the latest processQueue function
+  useEffect(() => {
+    processQueueRef.current = processQueue;
+  }, [processQueue]);
+
+  // WebSocket connection - open immediately and never reconnect (unless unmounted)
   useEffect(() => {
     const baseUrl = process.env.NEXT_PUBLIC_WS_BASE_URL || 'http://localhost:3001';
     // Convert http(s) to ws(s) and adjust port (WS runs on PORT + 1)
@@ -249,13 +283,12 @@ export default function Canvas({
         if (message.type === 'pixel_update' && message.payload) {
           const pixelUpdate = message.payload as PixelUpdate;
           
-          // Queue if loading snapshot
-          if (isLoadingSnapshot) {
-            console.log('[Canvas] Queuing pixel update during load:', pixelUpdate);
-            messageQueueRef.current.push(pixelUpdate);
-          } else {
-            // Apply immediately (batched redraw handles smoothness)
-            applyPixelUpdate(pixelUpdate);
+          // Always queue messages
+          messageQueueRef.current.push(pixelUpdate);
+          
+          // Process queue if canvas is ready (use ref to get latest function)
+          if (canvasReady.current) {
+            processQueueRef.current();
           }
         }
       } catch (error) {
@@ -271,27 +304,14 @@ export default function Canvas({
       console.log('[Canvas] WebSocket disconnected');
     };
 
-    // Cleanup on unmount
+    // Cleanup on unmount only
     return () => {
+      console.log('[Canvas] Cleaning up WebSocket connection');
       if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
         ws.close();
       }
     };
-  }, [isLoadingSnapshot, applyPixelUpdate]); // Include dependencies
-
-  // Process queued messages once snapshot is loaded
-  useEffect(() => {
-    if (!isLoadingSnapshot && messageQueueRef.current.length > 0) {
-      console.log('[Canvas] Processing', messageQueueRef.current.length, 'queued pixel updates');
-      
-      messageQueueRef.current.forEach(pixelUpdate => {
-        applyPixelUpdate(pixelUpdate);
-      });
-      
-      // Clear the queue
-      messageQueueRef.current = [];
-    }
-  }, [isLoadingSnapshot, applyPixelUpdate]);
+  }, []); // No dependencies - connect once on mount
 
   // Handle canvas click to place pixel
   const handleCanvasClick = useCallback(
@@ -581,6 +601,19 @@ export default function Canvas({
   // Redraw when dependencies change
   useEffect(() => {
     drawGrid();
+  }, [drawGrid]);
+
+  // Periodic redraw every 0.5s to ensure canvas stays in sync
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (canvasReady.current) {
+        drawGrid();
+      }
+    }, 500);
+
+    return () => {
+      clearInterval(intervalId);
+    };
   }, [drawGrid]);
 
   // Expose state to parent component

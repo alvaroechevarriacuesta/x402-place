@@ -326,7 +326,7 @@ async function main() {
         break;
       case 'square':
         console.log('🟦 Drawing a 20x20 blue square at (200, 200)...\n');
-        pixels = generateSquare(500, 500, 40, '#0000FF');
+        pixels = generateSquare(700, 700, 40, '#0000BB');
         break;
       case 'gradient':
         console.log('🌈 Drawing a rainbow gradient at (150, 150)...\n');
