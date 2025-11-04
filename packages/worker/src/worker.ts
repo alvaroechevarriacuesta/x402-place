@@ -127,7 +127,7 @@ async function startWorker() {
     } finally {
       isSnapshotting = false;
     }
-  }, 10 * 60 * 1000); // Every 10 minutes
+  }, 30 * 60 * 1000); // Every 30 minutes
 
   while (true) {
     try {
