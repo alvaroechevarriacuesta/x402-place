@@ -42,9 +42,11 @@ export function useGetSnapshot(gridWidth = 1000, gridHeight = 1000) {
         // Step 1: Get the latest snapshot metadata from backend
         console.log('[useGetSnapshot] Fetching snapshot metadata...');
         const snapshotResponse = await fetch(`${baseUrl}/api/snapshot`);
-        
+
         if (!snapshotResponse.ok) {
-          throw new Error(`Failed to fetch snapshot: ${snapshotResponse.statusText}`);
+          throw new Error(
+            `Failed to fetch snapshot: ${snapshotResponse.statusText}`
+          );
         }
 
         const snapshot: Snapshot = await snapshotResponse.json();
@@ -53,9 +55,11 @@ export function useGetSnapshot(gridWidth = 1000, gridHeight = 1000) {
         // Step 2: Fetch the PNG from Vercel blob store (public access)
         console.log('[useGetSnapshot] Fetching PNG from:', snapshot.blobUrl);
         const imageResponse = await fetch(snapshot.blobUrl);
-        
+
         if (!imageResponse.ok) {
-          throw new Error(`Failed to fetch snapshot image: ${imageResponse.statusText}`);
+          throw new Error(
+            `Failed to fetch snapshot image: ${imageResponse.statusText}`
+          );
         }
 
         const imageBlob = await imageResponse.blob();
@@ -97,32 +101,43 @@ export function useGetSnapshot(gridWidth = 1000, gridHeight = 1000) {
 
         // Step 4: Fetch the latest changes since snapshot timestamp until now
         const now = Date.now();
-        console.log('[useGetSnapshot] Fetching changes from', snapshot.timestamp, 'to', now);
-        
+        console.log(
+          '[useGetSnapshot] Fetching changes from',
+          snapshot.timestamp,
+          'to',
+          now
+        );
+
         const changesResponse = await fetch(
           `${baseUrl}/api/history?since=${snapshot.timestamp}&until=${now}`
         );
 
         let changes: PixelUpdateEvent[] = [];
-        
+
         if (changesResponse.ok) {
           changes = await changesResponse.json();
           console.log('[useGetSnapshot] Fetched', changes.length, 'changes');
         } else {
-          console.warn('[useGetSnapshot] Failed to fetch changes, continuing without them');
+          console.warn(
+            '[useGetSnapshot] Failed to fetch changes, continuing without them'
+          );
         }
 
         // Step 5: Apply the changes to the canvas
         if (changes.length > 0) {
-          console.log('[useGetSnapshot] Applying', changes.length, 'changes to canvas');
-          
+          console.log(
+            '[useGetSnapshot] Applying',
+            changes.length,
+            'changes to canvas'
+          );
+
           changes.forEach(change => {
             // Parse the hex color and draw a single pixel
             const color = change.color;
             ctx.fillStyle = color;
             ctx.fillRect(change.x, change.y, 1, 1);
           });
-          
+
           console.log('[useGetSnapshot] Changes applied to canvas');
         }
 
@@ -156,4 +171,3 @@ export function useGetSnapshot(gridWidth = 1000, gridHeight = 1000) {
 
   return data;
 }
-

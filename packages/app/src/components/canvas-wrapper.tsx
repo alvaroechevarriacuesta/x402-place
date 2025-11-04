@@ -3,7 +3,15 @@
 import { useEffect, useState, useRef } from 'react';
 import Canvas from './canvas';
 import Minimap from './minimap';
-import { ZoomIn, ZoomOut, Maximize2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  ChevronUp,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 
 interface CanvasWrapperProps {
   gridWidth?: number;
@@ -41,7 +49,7 @@ export default function CanvasWrapper({
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!canvasState) return;
-      
+
       // Check if user is typing in an input field
       const target = event.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
@@ -127,14 +135,14 @@ export default function CanvasWrapper({
 
       // Get the actual container dimensions
       const rect = containerRef.current.getBoundingClientRect();
-      
+
       // Check if mobile/tablet (screen width < 1024px uses mobile layout)
       const mobile = window.innerWidth < 1024;
       setIsMobile(mobile);
-      
+
       // Calculate available space
-      const availableWidth = rect.width - (padding * 2);
-      const availableHeight = rect.height - (padding * 2);
+      const availableWidth = rect.width - padding * 2;
+      const availableHeight = rect.height - padding * 2;
 
       // Calculate the square size as the minimum of available width and height
       const squareSize = Math.max(0, Math.min(availableWidth, availableHeight));
@@ -156,22 +164,27 @@ export default function CanvasWrapper({
 
   if (canvasSize === 0) {
     return (
-      <div ref={containerRef} className="w-full h-full flex items-center justify-center">
+      <div
+        ref={containerRef}
+        className="w-full h-full flex items-center justify-center"
+      >
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className="w-full h-full"
-      style={{ 
+      style={{
         padding: `${padding}px`,
       }}
     >
       {/* Simple HStack (desktop) / VStack (mobile) */}
-      <div className={`flex ${isMobile ? 'flex-col' : 'flex-row'} items-center justify-center gap-4 w-full h-full`}>
+      <div
+        className={`flex ${isMobile ? 'flex-col' : 'flex-row'} items-center justify-center gap-4 w-full h-full`}
+      >
         {/* Canvas */}
         <div
           className="relative border-2 border-border rounded-lg shadow-lg overflow-hidden bg-background flex-shrink-0"
@@ -190,91 +203,96 @@ export default function CanvasWrapper({
         </div>
 
         {/* Controls */}
-        {canvasState && !canvasState.isLoadingSnapshot && canvasState.viewportDimensions.width > 0 && (
-          <div className={`flex ${isMobile ? 'flex-row' : 'flex-col'} gap-3 items-center ${isMobile ? 'justify-center' : 'justify-end self-end'} flex-shrink-0 ${isMobile ? 'scale-75' : ''}`}>
-            {/* Minimap */}
-            <Minimap
-              gridWidth={gridWidth}
-              gridHeight={gridHeight}
-              pixelSize={pixelSize}
-              offset={canvasState.offset}
-              scale={canvasState.scale}
-              viewportWidth={canvasState.viewportDimensions.width}
-              viewportHeight={canvasState.viewportDimensions.height}
-              gridRef={canvasState.gridRef}
-              onNavigate={(newOffset: { x: number; y: number }) => canvasState.setOffset(newOffset)}
-            />
+        {canvasState &&
+          !canvasState.isLoadingSnapshot &&
+          canvasState.viewportDimensions.width > 0 && (
+            <div
+              className={`flex ${isMobile ? 'flex-row' : 'flex-col'} gap-3 items-center ${isMobile ? 'justify-center' : 'justify-end self-end'} flex-shrink-0 ${isMobile ? 'scale-75' : ''}`}
+            >
+              {/* Minimap */}
+              <Minimap
+                gridWidth={gridWidth}
+                gridHeight={gridHeight}
+                pixelSize={pixelSize}
+                offset={canvasState.offset}
+                scale={canvasState.scale}
+                viewportWidth={canvasState.viewportDimensions.width}
+                viewportHeight={canvasState.viewportDimensions.height}
+                gridRef={canvasState.gridRef}
+                onNavigate={(newOffset: { x: number; y: number }) =>
+                  canvasState.setOffset(newOffset)
+                }
+              />
 
-            {/* Button controls (zoom + navigation) */}
-            <div className="flex flex-col gap-3 items-center">
-              {/* Zoom controls */}
-              <div className="flex gap-2 justify-center">
-                <button
-                  onClick={canvasState.handleZoomOut}
-                  className="px-4 py-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
-                  title="Zoom Out"
-                  aria-label="Zoom Out"
-                >
-                  <ZoomOut className="w-5 h-5 text-foreground" />
-                </button>
-                <button
-                  onClick={canvasState.handleZoomIn}
-                  className="px-4 py-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
-                  title="Zoom In"
-                  aria-label="Zoom In"
-                >
-                  <ZoomIn className="w-5 h-5 text-foreground" />
-                </button>
-              </div>
+              {/* Button controls (zoom + navigation) */}
+              <div className="flex flex-col gap-3 items-center">
+                {/* Zoom controls */}
+                <div className="flex gap-2 justify-center">
+                  <button
+                    onClick={canvasState.handleZoomOut}
+                    className="px-4 py-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
+                    title="Zoom Out"
+                    aria-label="Zoom Out"
+                  >
+                    <ZoomOut className="w-5 h-5 text-foreground" />
+                  </button>
+                  <button
+                    onClick={canvasState.handleZoomIn}
+                    className="px-4 py-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
+                    title="Zoom In"
+                    aria-label="Zoom In"
+                  >
+                    <ZoomIn className="w-5 h-5 text-foreground" />
+                  </button>
+                </div>
 
-              {/* Navigation D-pad with reset in center */}
-              <div className="relative w-32 h-32">
-                <button
-                  onClick={handlePanUp}
-                  className="absolute left-1/2 top-0 -translate-x-1/2 p-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
-                  title="Pan Up (Arrow Up)"
-                  aria-label="Pan Up"
-                >
-                  <ChevronUp className="w-5 h-5 text-foreground" />
-                </button>
-                <button
-                  onClick={handlePanDown}
-                  className="absolute left-1/2 bottom-0 -translate-x-1/2 p-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
-                  title="Pan Down (Arrow Down)"
-                  aria-label="Pan Down"
-                >
-                  <ChevronDown className="w-5 h-5 text-foreground" />
-                </button>
-                <button
-                  onClick={handlePanLeft}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
-                  title="Pan Left (Arrow Left)"
-                  aria-label="Pan Left"
-                >
-                  <ChevronLeft className="w-5 h-5 text-foreground" />
-                </button>
-                <button
-                  onClick={handlePanRight}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
-                  title="Pan Right (Arrow Right)"
-                  aria-label="Pan Right"
-                >
-                  <ChevronRight className="w-5 h-5 text-foreground" />
-                </button>
-                <button
-                  onClick={canvasState.handleResetView}
-                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 p-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
-                  title="Fit to View"
-                  aria-label="Fit to View"
-                >
-                  <Maximize2 className="w-5 h-5 text-foreground" />
-                </button>
+                {/* Navigation D-pad with reset in center */}
+                <div className="relative w-32 h-32">
+                  <button
+                    onClick={handlePanUp}
+                    className="absolute left-1/2 top-0 -translate-x-1/2 p-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
+                    title="Pan Up (Arrow Up)"
+                    aria-label="Pan Up"
+                  >
+                    <ChevronUp className="w-5 h-5 text-foreground" />
+                  </button>
+                  <button
+                    onClick={handlePanDown}
+                    className="absolute left-1/2 bottom-0 -translate-x-1/2 p-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
+                    title="Pan Down (Arrow Down)"
+                    aria-label="Pan Down"
+                  >
+                    <ChevronDown className="w-5 h-5 text-foreground" />
+                  </button>
+                  <button
+                    onClick={handlePanLeft}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
+                    title="Pan Left (Arrow Left)"
+                    aria-label="Pan Left"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-foreground" />
+                  </button>
+                  <button
+                    onClick={handlePanRight}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
+                    title="Pan Right (Arrow Right)"
+                    aria-label="Pan Right"
+                  >
+                    <ChevronRight className="w-5 h-5 text-foreground" />
+                  </button>
+                  <button
+                    onClick={canvasState.handleResetView}
+                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 p-2 rounded-lg bg-background hover:bg-muted transition-colors border border-border shadow-sm"
+                    title="Fit to View"
+                    aria-label="Fit to View"
+                  >
+                    <Maximize2 className="w-5 h-5 text-foreground" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
     </div>
   );
 }
-

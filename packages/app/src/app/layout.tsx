@@ -1,24 +1,25 @@
-import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
 import { Navbar } from './_components/layout/navbar';
 import { ColorProvider } from './_contexts/color-context';
 
-import "./globals.css";
-import { ThemeProvider } from "next-themes";
+import './globals.css';
+import { ThemeProvider } from 'next-themes';
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
-  title: "X402 Place - Collaborative Pixel Canvas",
-  description: "A collaborative pixel canvas where users can place pixels and create art together in real-time via x402.",
+  title: 'X402 Place - Collaborative Pixel Canvas',
+  description:
+    'A collaborative pixel canvas where users can place pixels and create art together in real-time via x402.',
 };
 
 export const viewport: Viewport = {
@@ -40,22 +41,21 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-
-  <ThemeProvider
-                    attribute="class"
-                    defaultTheme="light"
-                    storageKey="xplace-theme"
-                    enableSystem={true}
-                  >
-                    <ColorProvider>
-                      <div className="h-screen flex flex-col overflow-hidden">
-                        <Navbar />
-                        <main className="flex-1 overflow-hidden bg-background">
-                          {children}
-                        </main>
-                      </div>
-                    </ColorProvider>
-                  </ThemeProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          storageKey="xplace-theme"
+          enableSystem={true}
+        >
+          <ColorProvider>
+            <div className="h-screen flex flex-col overflow-hidden">
+              <Navbar />
+              <main className="flex-1 overflow-hidden bg-background">
+                {children}
+              </main>
+            </div>
+          </ColorProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

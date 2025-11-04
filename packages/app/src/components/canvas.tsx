@@ -33,9 +33,13 @@ export default function Canvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { placePixel } = usePixelPayment();
-  
+
   // Load snapshot with changes applied
-  const { canvas: snapshotCanvas, isLoadingSnapshot, error } = useGetSnapshot(gridWidth, gridHeight);
+  const {
+    canvas: snapshotCanvas,
+    isLoadingSnapshot,
+    error,
+  } = useGetSnapshot(gridWidth, gridHeight);
 
   // Grid state - stores the color of each pixel
   const gridRef = useRef<string[][]>(
@@ -75,7 +79,7 @@ export default function Canvas({
   const drawGrid = useCallback(() => {
     // Don't draw until view is initialized
     if (!hasInitializedView.current) return;
-    
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -127,58 +131,62 @@ export default function Canvas({
   }, [offset, scale, gridWidth, gridHeight, pixelSize]);
 
   // Fast single pixel update - doesn't redraw the entire canvas
-  const drawSinglePixel = useCallback((x: number, y: number, color: string) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  const drawSinglePixel = useCallback(
+    (x: number, y: number, color: string) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-    // Save context state
-    ctx.save();
+      // Save context state
+      ctx.save();
 
-    // Apply transformations
-    ctx.translate(offset.x, offset.y);
-    ctx.scale(scale, scale);
+      // Apply transformations
+      ctx.translate(offset.x, offset.y);
+      ctx.scale(scale, scale);
 
-    // Draw the single pixel
-    ctx.fillStyle = color;
-    ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+      // Draw the single pixel
+      ctx.fillStyle = color;
+      ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
 
-    // Redraw grid lines for this pixel if needed
-    if (scale >= 0.25) {
-      ctx.strokeStyle = '#E5E5E5';
-      ctx.lineWidth = 0.5 / scale;
+      // Redraw grid lines for this pixel if needed
+      if (scale >= 0.25) {
+        ctx.strokeStyle = '#E5E5E5';
+        ctx.lineWidth = 0.5 / scale;
 
-      // Draw the grid lines around this pixel
-      ctx.beginPath();
-      ctx.moveTo(x * pixelSize, y * pixelSize);
-      ctx.lineTo((x + 1) * pixelSize, y * pixelSize);
-      ctx.stroke();
+        // Draw the grid lines around this pixel
+        ctx.beginPath();
+        ctx.moveTo(x * pixelSize, y * pixelSize);
+        ctx.lineTo((x + 1) * pixelSize, y * pixelSize);
+        ctx.stroke();
 
-      ctx.beginPath();
-      ctx.moveTo((x + 1) * pixelSize, y * pixelSize);
-      ctx.lineTo((x + 1) * pixelSize, (y + 1) * pixelSize);
-      ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo((x + 1) * pixelSize, y * pixelSize);
+        ctx.lineTo((x + 1) * pixelSize, (y + 1) * pixelSize);
+        ctx.stroke();
 
-      ctx.beginPath();
-      ctx.moveTo(x * pixelSize, (y + 1) * pixelSize);
-      ctx.lineTo((x + 1) * pixelSize, (y + 1) * pixelSize);
-      ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x * pixelSize, (y + 1) * pixelSize);
+        ctx.lineTo((x + 1) * pixelSize, (y + 1) * pixelSize);
+        ctx.stroke();
 
-      ctx.beginPath();
-      ctx.moveTo(x * pixelSize, y * pixelSize);
-      ctx.lineTo(x * pixelSize, (y + 1) * pixelSize);
-      ctx.stroke();
-    }
+        ctx.beginPath();
+        ctx.moveTo(x * pixelSize, y * pixelSize);
+        ctx.lineTo(x * pixelSize, (y + 1) * pixelSize);
+        ctx.stroke();
+      }
 
-    // Restore context state
-    ctx.restore();
-  }, [offset, scale, pixelSize]);
+      // Restore context state
+      ctx.restore();
+    },
+    [offset, scale, pixelSize]
+  );
 
   // Parse snapshot canvas into grid when it's loaded (only once!)
   useEffect(() => {
-    if (!snapshotCanvas || isLoadingSnapshot || hasParsedSnapshot.current) return;
+    if (!snapshotCanvas || isLoadingSnapshot || hasParsedSnapshot.current)
+      return;
 
     console.log('[Canvas] Parsing snapshot canvas into grid...');
     const ctx = snapshotCanvas.getContext('2d');
@@ -211,14 +219,20 @@ export default function Canvas({
 
     // Mark canvas as ready and process any queued messages
     canvasReady.current = true;
-    console.log(`[Canvas] Canvas ready, processing ${messageQueueRef.current.length} queued messages`);
+    console.log(
+      `[Canvas] Canvas ready, processing ${messageQueueRef.current.length} queued messages`
+    );
     processQueue();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [snapshotCanvas, isLoadingSnapshot, gridWidth, gridHeight]); // drawGrid and processQueue intentionally excluded
 
   // Process the pixel queue in batches
   const processQueue = useCallback(() => {
-    if (!canvasReady.current || messageQueueRef.current.length === 0 || processingQueueRef.current) {
+    if (
+      !canvasReady.current ||
+      messageQueueRef.current.length === 0 ||
+      processingQueueRef.current
+    ) {
       return;
     }
 
@@ -226,10 +240,15 @@ export default function Canvas({
 
     requestAnimationFrame(() => {
       // Take all queued messages
-      const pixelsToProcess = messageQueueRef.current.splice(0, messageQueueRef.current.length);
-      
+      const pixelsToProcess = messageQueueRef.current.splice(
+        0,
+        messageQueueRef.current.length
+      );
+
       if (pixelsToProcess.length > 0) {
-        console.log(`[Canvas] Processing ${pixelsToProcess.length} queued pixel updates`);
+        console.log(
+          `[Canvas] Processing ${pixelsToProcess.length} queued pixel updates`
+        );
       }
 
       // Apply each pixel update
@@ -257,15 +276,16 @@ export default function Canvas({
 
   // WebSocket connection - open immediately and never reconnect (unless unmounted)
   useEffect(() => {
-    const baseUrl = process.env.NEXT_PUBLIC_WS_BASE_URL || 'http://localhost:3001';
+    const baseUrl =
+      process.env.NEXT_PUBLIC_WS_BASE_URL || 'http://localhost:3001';
     // Convert http(s) to ws(s) and adjust port (WS runs on PORT + 1)
     let wsUrl = baseUrl.replace(/^http/, 'ws');
-    
+
     // If using default localhost, WS is on port 3002 (3001 + 1)
     if (wsUrl.includes('localhost:3001')) {
       wsUrl = wsUrl.replace('3001', '3002');
     }
-    
+
     const wsFullUrl = `${wsUrl}/ws`;
 
     console.log('[Canvas] Connecting to WebSocket:', wsFullUrl);
@@ -276,16 +296,16 @@ export default function Canvas({
       console.log('[Canvas] WebSocket connected');
     };
 
-    ws.onmessage = (event) => {
+    ws.onmessage = event => {
       try {
         const message = JSON.parse(event.data);
-        
+
         if (message.type === 'pixel_update' && message.payload) {
           const pixelUpdate = message.payload as PixelUpdate;
-          
+
           // Always queue messages
           messageQueueRef.current.push(pixelUpdate);
-          
+
           // Process queue if canvas is ready (use ref to get latest function)
           if (canvasReady.current) {
             processQueueRef.current();
@@ -296,7 +316,7 @@ export default function Canvas({
       }
     };
 
-    ws.onerror = (error) => {
+    ws.onerror = error => {
       console.error('[Canvas] WebSocket error:', error);
     };
 
@@ -307,7 +327,10 @@ export default function Canvas({
     // Cleanup on unmount only
     return () => {
       console.log('[Canvas] Cleaning up WebSocket connection');
-      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+      if (
+        ws.readyState === WebSocket.OPEN ||
+        ws.readyState === WebSocket.CONNECTING
+      ) {
         ws.close();
       }
     };
@@ -577,23 +600,23 @@ export default function Canvas({
         // Calculate the scale needed to fit the entire grid in the viewport
         const gridPixelWidth = gridWidth * pixelSize;
         const gridPixelHeight = gridHeight * pixelSize;
-        
+
         // Fill the entire container (100% of viewport)
         const scaleX = rect.width / gridPixelWidth;
         const scaleY = rect.height / gridPixelHeight;
         const fitScale = Math.min(scaleX, scaleY);
-        
+
         setScale(fitScale);
-        
+
         // Center the grid
         setOffset({
           x: (rect.width - gridPixelWidth * fitScale) / 2,
           y: (rect.height - gridPixelHeight * fitScale) / 2,
         });
-        
+
         // Mark as initialized - this will allow drawGrid to run
         hasInitializedView.current = true;
-        
+
         // Draw the grid now that view is initialized
         setTimeout(() => drawGrid(), 0);
       } else {
@@ -614,11 +637,14 @@ export default function Canvas({
     drawGrid();
   }, [drawGrid]);
 
-
-
   // Expose state to parent component
   useEffect(() => {
-    if (onStateChange && handleZoomInRef.current && handleZoomOutRef.current && handleResetViewRef.current) {
+    if (
+      onStateChange &&
+      handleZoomInRef.current &&
+      handleZoomOutRef.current &&
+      handleResetViewRef.current
+    ) {
       onStateChange({
         offset,
         scale,
@@ -654,7 +680,9 @@ export default function Canvas({
           <div className="bg-card rounded-lg shadow-xl p-6 text-center">
             <div className="flex flex-col gap-3 items-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <div className="text-sm font-medium text-card-foreground">Loading canvas...</div>
+              <div className="text-sm font-medium text-card-foreground">
+                Loading canvas...
+              </div>
               <div className="text-xs text-muted-foreground">
                 Fetching snapshot and applying changes
               </div>
@@ -668,7 +696,9 @@ export default function Canvas({
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
           <div className="bg-card rounded-lg shadow-xl p-6 text-center">
             <div className="flex flex-col gap-3 items-center">
-              <div className="text-sm font-medium text-destructive">Failed to load canvas</div>
+              <div className="text-sm font-medium text-destructive">
+                Failed to load canvas
+              </div>
               <div className="text-xs text-muted-foreground">
                 {error.message}
               </div>

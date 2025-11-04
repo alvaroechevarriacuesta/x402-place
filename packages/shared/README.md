@@ -28,7 +28,7 @@ pnpm db:migrate
 Import from this package in backend or worker:
 
 ```typescript
-import { db, redis, type Pixel } from "@x402place/shared";
+import { db, redis, type Pixel } from '@x402place/shared';
 ```
 
 ## Structure

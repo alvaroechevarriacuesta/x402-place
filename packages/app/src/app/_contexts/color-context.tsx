@@ -26,4 +26,3 @@ export function useColor() {
   }
   return context;
 }
-

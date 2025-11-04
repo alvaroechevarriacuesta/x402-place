@@ -1,25 +1,25 @@
 /**
  * Test Pixel Placement Script
- * 
+ *
  * This script places pixels via the backend API for testing purposes.
  * Pixels are placed in visible patterns so you can easily see them on the canvas.
- * 
+ *
  * Usage:
  *   pnpm test:pixels [pattern]
- * 
+ *
  * Available patterns:
  *   - smiley   : Draws a smiley face at (100, 100) [default]
  *   - square   : Draws a 20x20 blue square at (200, 200)
  *   - gradient : Draws a rainbow gradient at (150, 150)
  *   - text     : Draws "HI" text at (300, 300)
  *   - hello    : Draws "Hello rsproule!!" in big black letters in the bottom half
- * 
+ *
  * Examples:
  *   pnpm test:pixels smiley
  *   pnpm test:pixels square
  *   pnpm test:pixels hello
  *   BASE_URL=https://your-backend.railway.app pnpm test:pixels gradient
- * 
+ *
  * Environment Variables:
  *   BASE_URL - Backend server URL (default: http://localhost:3001)
  */
@@ -106,35 +106,48 @@ function generateSmileyFace(startX: number, startY: number): Pixel[] {
 }
 
 // Generate a simple square pattern
-function generateSquare(startX: number, startY: number, size: number, color: string): Pixel[] {
+function generateSquare(
+  startX: number,
+  startY: number,
+  size: number,
+  color: string
+): Pixel[] {
   const pixels: Pixel[] = [];
-  
+
   for (let i = 0; i < size; i++) {
     for (let j = 0; j < size; j++) {
       pixels.push({ x: startX + i, y: startY + j, color });
     }
   }
-  
+
   return pixels;
 }
 
 // Generate a gradient pattern
 function generateGradient(startX: number, startY: number): Pixel[] {
   const pixels: Pixel[] = [];
-  const colors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
-  
+  const colors = [
+    '#FF0000',
+    '#FF7F00',
+    '#FFFF00',
+    '#00FF00',
+    '#0000FF',
+    '#4B0082',
+    '#9400D3',
+  ];
+
   colors.forEach((color, index) => {
     for (let i = 0; i < 10; i++) {
       for (let j = 0; j < 5; j++) {
-        pixels.push({ 
-          x: startX + (index * 10) + i, 
-          y: startY + j, 
-          color 
+        pixels.push({
+          x: startX + index * 10 + i,
+          y: startY + j,
+          color,
         });
       }
     }
   });
-  
+
   return pixels;
 }
 
@@ -177,96 +190,96 @@ function generateText(startX: number, startY: number): Pixel[] {
 
 // 5x7 pixel font patterns for each letter
 const FONT_5X7: { [key: string]: number[][] } = {
-  'H': [
-    [1,0,0,0,1],
-    [1,0,0,0,1],
-    [1,0,0,0,1],
-    [1,1,1,1,1],
-    [1,0,0,0,1],
-    [1,0,0,0,1],
-    [1,0,0,0,1]
+  H: [
+    [1, 0, 0, 0, 1],
+    [1, 0, 0, 0, 1],
+    [1, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 1],
+    [1, 0, 0, 0, 1],
+    [1, 0, 0, 0, 1],
   ],
-  'e': [
-    [0,0,0,0,0],
-    [0,1,1,1,0],
-    [1,0,0,0,1],
-    [1,1,1,1,1],
-    [1,0,0,0,0],
-    [0,1,1,1,1],
-    [0,0,0,0,0]
+  e: [
+    [0, 0, 0, 0, 0],
+    [0, 1, 1, 1, 0],
+    [1, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0],
+    [0, 1, 1, 1, 1],
+    [0, 0, 0, 0, 0],
   ],
-  'l': [
-    [1,1,0,0,0],
-    [0,1,0,0,0],
-    [0,1,0,0,0],
-    [0,1,0,0,0],
-    [0,1,0,0,0],
-    [1,1,1,0,0],
-    [0,0,0,0,0]
+  l: [
+    [1, 1, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [1, 1, 1, 0, 0],
+    [0, 0, 0, 0, 0],
   ],
-  'o': [
-    [0,0,0,0,0],
-    [0,1,1,1,0],
-    [1,0,0,0,1],
-    [1,0,0,0,1],
-    [1,0,0,0,1],
-    [0,1,1,1,0],
-    [0,0,0,0,0]
+  o: [
+    [0, 0, 0, 0, 0],
+    [0, 1, 1, 1, 0],
+    [1, 0, 0, 0, 1],
+    [1, 0, 0, 0, 1],
+    [1, 0, 0, 0, 1],
+    [0, 1, 1, 1, 0],
+    [0, 0, 0, 0, 0],
   ],
-  'r': [
-    [0,0,0,0,0],
-    [0,1,0,1,1],
-    [0,1,1,0,0],
-    [0,1,0,0,0],
-    [0,1,0,0,0],
-    [0,1,0,0,0],
-    [0,0,0,0,0]
+  r: [
+    [0, 0, 0, 0, 0],
+    [0, 1, 0, 1, 1],
+    [0, 1, 1, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0],
   ],
-  's': [
-    [0,0,0,0,0],
-    [0,1,1,1,1],
-    [1,0,0,0,0],
-    [0,1,1,1,0],
-    [0,0,0,0,1],
-    [1,1,1,1,0],
-    [0,0,0,0,0]
+  s: [
+    [0, 0, 0, 0, 0],
+    [0, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0],
+    [0, 1, 1, 1, 0],
+    [0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 0],
+    [0, 0, 0, 0, 0],
   ],
-  'p': [
-    [0,0,0,0,0],
-    [1,1,1,1,0],
-    [1,0,0,0,1],
-    [1,1,1,1,0],
-    [1,0,0,0,0],
-    [1,0,0,0,0],
-    [1,0,0,0,0]
+  p: [
+    [0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 0],
+    [1, 0, 0, 0, 1],
+    [1, 1, 1, 1, 0],
+    [1, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0],
   ],
-  'u': [
-    [0,0,0,0,0],
-    [1,0,0,0,1],
-    [1,0,0,0,1],
-    [1,0,0,0,1],
-    [1,0,0,0,1],
-    [0,1,1,1,1],
-    [0,0,0,0,0]
+  u: [
+    [0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 1],
+    [1, 0, 0, 0, 1],
+    [1, 0, 0, 0, 1],
+    [1, 0, 0, 0, 1],
+    [0, 1, 1, 1, 1],
+    [0, 0, 0, 0, 0],
   ],
   '!': [
-    [0,1,0,0,0],
-    [0,1,0,0,0],
-    [0,1,0,0,0],
-    [0,1,0,0,0],
-    [0,0,0,0,0],
-    [0,1,0,0,0],
-    [0,0,0,0,0]
+    [0, 1, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0],
   ],
   ' ': [
-    [0,0,0,0,0],
-    [0,0,0,0,0],
-    [0,0,0,0,0],
-    [0,0,0,0,0],
-    [0,0,0,0,0],
-    [0,0,0,0,0],
-    [0,0,0,0,0]
-  ]
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0],
+  ],
 };
 
 // Generate "Hello rsproule!!" in big black letters
@@ -275,13 +288,13 @@ function generateHelloMessage(startX: number, startY: number): Pixel[] {
   const color = '#000000'; // Black
   const scale = 3; // Scale up each letter by 3x (so 5x7 becomes 15x21)
   const letterSpacing = 18; // Spacing between letters (in scaled pixels)
-  
+
   const message = 'Hello rsproule!!';
   let currentX = startX;
-  
+
   for (const char of message) {
     const pattern = FONT_5X7[char];
-    
+
     if (pattern) {
       // Draw the letter with scaling
       for (let row = 0; row < pattern.length; row++) {
@@ -291,9 +304,9 @@ function generateHelloMessage(startX: number, startY: number): Pixel[] {
             for (let sy = 0; sy < scale; sy++) {
               for (let sx = 0; sx < scale; sx++) {
                 pixels.push({
-                  x: currentX + (col * scale) + sx,
-                  y: startY + (row * scale) + sy,
-                  color
+                  x: currentX + col * scale + sx,
+                  y: startY + row * scale + sy,
+                  color,
                 });
               }
             }
@@ -301,11 +314,11 @@ function generateHelloMessage(startX: number, startY: number): Pixel[] {
         }
       }
     }
-    
+
     // Move to next letter position
     currentX += letterSpacing;
   }
-  
+
   return pixels;
 }
 
@@ -343,7 +356,9 @@ async function main() {
         pixels = generateHelloMessage(200, 700);
         break;
       default:
-        console.log('❌ Unknown pattern. Available: smiley, square, gradient, text, hello');
+        console.log(
+          '❌ Unknown pattern. Available: smiley, square, gradient, text, hello'
+        );
         process.exit(1);
     }
 
@@ -353,7 +368,7 @@ async function main() {
     for (let i = 0; i < pixels.length; i++) {
       const pixel = pixels[i];
       await placePixel(pixel.x, pixel.y, pixel.color);
-      
+
       if (DELAY_MS > 0) {
         await delay(DELAY_MS);
       }
@@ -373,4 +388,3 @@ async function main() {
 }
 
 main();
-

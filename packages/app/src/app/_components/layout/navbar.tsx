@@ -30,7 +30,7 @@ export function Navbar() {
           <span className="text-xs md:text-sm font-medium text-muted-foreground">
             Color:
           </span>
-          <ColorPicker 
+          <ColorPicker
             onColorChange={setSelectedColor}
             defaultColor={selectedColor}
           />
@@ -39,4 +39,3 @@ export function Navbar() {
     </header>
   );
 }
-

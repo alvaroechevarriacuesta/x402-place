@@ -1,4 +1,4 @@
-version: "3.8"
+version: '3.8'
 
 services:
   postgres:
@@ -6,7 +6,7 @@ services:
     container_name: x402place-postgres
     restart: unless-stopped
     ports:
-      - "5471:5432"
+      - '5471:5432'
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -14,7 +14,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 10s
       timeout: 5s
       retries: 5
